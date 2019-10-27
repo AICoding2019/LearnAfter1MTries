@@ -6,7 +6,7 @@ from Settings import *
 from Map import *
 from Walls import *
 from Players import *
-from itertools import permutations
+
 
 class TicTacToe:
     def __init__(self):
