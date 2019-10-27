@@ -6,6 +6,7 @@ from Settings import *
 from Map import *
 from Walls import *
 from Players import *
+from EventManager import *
 
 
 class TicTacToe:
@@ -89,6 +90,7 @@ class TicTacToe:
 
         self.player1 = Player(self, PLAYER_TYPE_BAYES, PLAYER1,0,0)
         self.player2 = Player(self, PLAYER_TYPE_BAYES, PLAYER2,0,0)
+        self.events  = EventManager(self)
 
 
     def loadImageData(self):
@@ -248,7 +250,7 @@ if __name__ == '__main__':
             running=False
 
     while True:
-        pass
+        environ.events.events()
 
     
 
