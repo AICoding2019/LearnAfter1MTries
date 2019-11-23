@@ -10,7 +10,7 @@ from EventManager import *
 
 
 class TicTacToe:
-    def __init__(self):
+    def __init__(self,player1Type,player2Type):
         pg.init()
         self.screen = pg.display.set_mode((WIDTH,HEIGHT))
         pg.display.set_caption(TITLE)
@@ -78,7 +78,7 @@ class TicTacToe:
 
         self.moves = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
         self.movesLeft=[0,1,2,3,4,5,6,7,8]
-        self.playerMoves=[0,0,0,0,0,0,0,0,0]
+        self.playerMoves=['0', '0', '0', '0', '0', '0', '0', '0','0']
         self.opponentMoves=[]
         self.board =np.array([[0, 0, 0],
                               [0, 0, 0],
@@ -88,8 +88,8 @@ class TicTacToe:
         self.walls = pg.sprite.Group()
         self.players = pg.sprite.Group()
 
-        self.player1 = Player(self, PLAYER_TYPE_BAYES, PLAYER1,0,0)
-        self.player2 = Player(self, PLAYER_TYPE_BAYES, PLAYER2,0,0)
+        self.player1=Player(self, player1Type,PLAYER1, 0, 0)
+        self.player2=Player(self, player2Type,PLAYER2, 0, 0)
         self.events  = EventManager(self)
 
 
@@ -98,7 +98,6 @@ class TicTacToe:
         self.map =Map(path.join(ticTacToeFolder, 'map.txt'))
 
     def boardDisplay(self):
-
         for row, tiles in enumerate(self.map.data):
             for col, tile in enumerate(tiles):
                 if tile == '1':
@@ -110,15 +109,24 @@ class TicTacToe:
                     displayPoint=self.locDisplay[(row,col)]
                     Player(self, PLAYER_TYPE_BAYES, PLAYER1, displayPoint[0], displayPoint[1])
 
-
                 if self.board[row, col] == 2:
                     displayPoint = self.locDisplay[(row,col)]
                     Player(self, PLAYER_TYPE_BAYES, PLAYER2, displayPoint[0], displayPoint[1])
 
     def newSim(self):
-        player1.move=[]
-        player2.move=[]
+        self.player1.move=[]
+        self.player2.move=[]
+        self.playerMoves = ['0', '0', '0', '0', '0', '0', '0', '0','0']
+        self.board = np.array([[0, 0, 0],
+                               [0, 0, 0],
+                               [0, 0, 0]])
+        self.moves = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
+        self.killAllSprite()
 
+
+    def killAllSprite(self):
+        for sprite in self.all_sprites:
+            sprite.kill()
 
     def draw(self):
         self.screen.fill(BGCOLOR)
@@ -126,34 +134,29 @@ class TicTacToe:
         pg.display.flip()
 
 
-    def laws(self,playerdesiredMove):
-
-        #Players move that already played
-        print("------{},{}".format(playerdesiredMove,self.board[playerdesiredMove]))
-
-
-        PlayerStatus,mask =self.checkIfWin()
-        print("PlayerStatus :"+ PlayerStatus)
+    def laws(self):
+        PlayerStatus, mask =self.checkBoardIfWin()
+        #print("PlayerStatus Law  {} moves left {}:".format(PlayerStatus,self.moves))
 
         if PlayerStatus !="UNKNOWN":
             status = PlayerStatus
             return status
-        elif PlayerStatus =="UNKNOWN" and self.movesLeft !=[]:
+
+        if PlayerStatus =="UNKNOWN" and self.movesLeft !=[]:
             status="OPEN"
 
-        if (status != "WIN") and (status != "LOSE") and (self.movesLeft ==[]):
+        if (status != "WIN") and (status != "LOSE") and (self.moves ==[]):
             status ="DRAW"
 
         return status
 
-    def checkIfWin(self):
+    def checkBoardIfWin(self):
         status = "UNKNOWN"
         winMask=np.array([[0, 0, 0],
                            [0, 0, 0],
                            [0, 0, 0]])
 
         for mask in self.winPositionMask:
-
             winOrLose=self.board*mask
 
             if np.array_equal(winOrLose , mask):
@@ -167,28 +170,27 @@ class TicTacToe:
         return status, winMask
 
     def playMove (self,desiredMove, player):
+        status=self.laws()
 
         if self.board[desiredMove] == 0:
             self.board[desiredMove]=player
-            status=self.laws(desiredMove)
+            status=self.laws()
+            if self.board[desiredMove] == []:
+                return status
         else:
-            status = "INVALID"
+            if self.board[desiredMove] != []:
+                status = "INVALID"
 
-       # print("-----" +str(player)+str(desiredMove))
-       # print(self.board)
-       # print("-----" +str(player))
-       # print(self.laws(desiredMove))
         return status
 
-
-
     def fitnessScore(self,status):
+        score= "UNKNOWN"
         if status =="WIN":
             score=1
         elif status =="DRAW":
-            score=-1
-        elif status =="LOSE":
             score=0
+        elif status =="LOSE":
+            score=-1
         elif status =="INVALID":
             score=-2
         else:
@@ -196,63 +198,89 @@ class TicTacToe:
 
         return score
 
-    #def environState(se   lf,board):
-     #   pass
 
     def update(self):
         pass
 
     def play(self):
-
         player1Move=self.player1.play()
         status=self.playMove(player1Move, 1)
-        print("---------------------------{},status".format(status))
 
-        if status != "INVALID":
+        if status != "INVALID" :
             dataCell = self.locData[player1Move]
-            self.playerMoves[dataCell]=1
+            self.playerMoves[dataCell]='1'
 
+            if status != "WIN":
+                player2Move = self.player2.play()
+                status = self.playMove(player2Move, 2)
 
-        player2Move = self.player2.play()
-        status = self.playMove(player2Move, 2)
-
-        if status != "INVALID":
-            dataCell = self.locData[player2Move]
-            self.playerMoves[dataCell] = 2
-
+                if status != "INVALID":
+                    dataCell = self.locData[player2Move]
+                    self.playerMoves[dataCell] = '2'
 
         return status
 
 
 
 if __name__ == '__main__':
-    environ=TicTacToe()
-    print(environ.board)
-    print('-------')
+    environ=TicTacToe(PLAYER_TYPE_BAYES,PLAYER_TYPE_BAYES)
 
     running=True
     count =0
-    while running:
-        environ.play()
+    countInvalid = 0
+    countValid = 0
+    countWin=0
+    countLose=0
+    countDraw=0
 
-        print(environ.board)
-        environ.boardDisplay()
-        environ.draw()
+    while running:
+        status=environ.play()
         environ.clock.tick(FPS)
         count += 1
-        print("----------"+str(count))
 
-        print(environ.playerMoves)
-        #fitness=environ.fitnessScore(play)
-        #print(fitness)
-        # environ.player1.log(fitness)
-        if count ==9:
+        environ.player1.playerMoves=environ.playerMoves
+        fitness=environ.fitnessScore(status)
+
+        if status == "WIN":
+            countWin +=1
+        if status == "LOSE":
+            countLose += 1
+        if status == "DRAW":
+            countDraw += 1
+
+        if status=="WIN" or status=="LOSE" or status =="DRAW":
+            #print("fitnessScore : {}".format(fitness))
+            #print(status)
+           # print(environ.board)
+            print("Games-{}-Valid-{}-Invaild-{}-Win-{}-Lose-{}-Draw-{}".format(countValid+countInvalid, countValid, countInvalid,
+                                                                               countWin,countLose,countDraw))
+
+            environ.player1.setFitness(fitness)
+            environ.player2.setFitness(fitness)
+            environ.player1.log("gameLog.txt",fitness)
+            countValid +=1
+            environ.newSim()
+
+        if status =="INVALID":
+            environ.player1.setFitness(fitness)
+            environ.player2.setFitness(fitness)
+            environ.newSim()
+            countInvalid += 1
+
+        if (countValid+countInvalid) ==1E4:
             running=False
 
-    while True:
-        environ.events.events()
+       # print(environ.board)
+        environ.boardDisplay()
+        environ.draw()
 
-    
+
+
+    #while True:
+        #environ.events.events()
+    print("SIM END")
+
+
 
 
 

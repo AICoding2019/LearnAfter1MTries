@@ -24,11 +24,14 @@ class Player(pg.sprite.Sprite):
         self.rect.y = y * TILESIZE-TILESIZE/2
         self.state = LEARNING
         self.playCount=0
+        self.playerMoves = []
 
     def RandomPlay(self):
         moves=self.environ.moves
-        self.move=random.choice(moves)
-        print("Player {} move {}".format(str(self.order),str(self.move)))
+        if moves !=[]:
+            self.move=random.choice(moves)
+            self.environ.moves.remove(self.move)
+        #print("Player {} move {}".format(str(self.order),str(self.move)))
 
     def openlogFile(self,fileName):
         with open(fileName, "a") as file:
@@ -36,7 +39,24 @@ class Player(pg.sprite.Sprite):
 
     def log(self,fileName,fitness):
         with open(fileName, "a") as file:
-            file.write(self.move.append(fitness))
+            logMoves=self.playerMoves
+            stringToWrite=''
+            for index,moves in enumerate(logMoves):
+                    stringToWrite=stringToWrite+moves+','
+
+            if fitness ==1:
+                addString="Player1"
+            elif fitness ==-1:
+                addString = "Player2"
+            elif fitness == 0:
+                addString = "Draw"
+            else:
+                addString= "Invalid"
+
+            stringToWrite = stringToWrite + addString
+            #print(stringToWrite)
+            file.write(stringToWrite)
+            file.write('\n')
 
     def play(self):
         if self.type ==PLAYER_TYPE_BAYES:
@@ -53,7 +73,14 @@ class Player(pg.sprite.Sprite):
 
     def BayesPlay(self):
         self.RandomPlay()
-        print("Player {} move {}".format(str(self.order),str(self.move)))
+        #print("Player {} move {}".format(str(self.order),str(self.move)))
+
+    def GANNPlay(self):
+        pass
+
+    def setFitness(self,fitness):
+        pass
+
 
 
 
