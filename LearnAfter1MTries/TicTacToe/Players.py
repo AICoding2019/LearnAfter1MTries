@@ -23,7 +23,7 @@ class Player(pg.sprite.Sprite):
         self.rect.x = x * TILESIZE-TILESIZE/2
         self.rect.y = y * TILESIZE-TILESIZE/2
         self.state = LEARNING
-        self.playCount=0
+        self.playCount = 0
         self.playerMoves = []
 
     def RandomPlay(self):
@@ -33,11 +33,11 @@ class Player(pg.sprite.Sprite):
             self.environ.moves.remove(self.move)
         #print("Player {} move {}".format(str(self.order),str(self.move)))
 
-    def openlogFile(self,fileName):
+    def openlogFile(self, fileName):
         with open(fileName, "a") as file:
             file.write(self.move.append(self.fitness))
 
-    def log(self,fileName,fitness):
+    def log(self, fileName, fitness):
         with open(fileName, "a") as file:
             logMoves=self.playerMoves
             stringToWrite=''
@@ -62,8 +62,8 @@ class Player(pg.sprite.Sprite):
         if self.type ==PLAYER_TYPE_BAYES:
             if self.state==LEARNING:
                 self.RandomPlay()
-                self.playCount +=1
-                if self.playCount ==LEARN_NUM:
+                self.playCount += 1
+                if self.playCount == LEARN_NUM:
                     self.state == TRAINED
                     self.playCount = 0
             else:
@@ -78,7 +78,7 @@ class Player(pg.sprite.Sprite):
     def GANNPlay(self):
         pass
 
-    def setFitness(self,fitness):
+    def setFitness(self, fitness):
         pass
 
 
