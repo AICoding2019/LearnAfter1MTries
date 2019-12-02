@@ -1,4 +1,5 @@
 import math
+import json
 import numpy as np
 from random import random
 from random import choice
@@ -182,6 +183,10 @@ class NeuralNetwork:
     def DrawGraph(self):
         pass
 
+    def LogGraph(self, directory, filename):
+        with open(directory  + filename + '.json', 'w') as json_file:
+            json.dump(self.NeuralNet, json_file, indent=4)
+
 
 if __name__ == '__main__':
     # Net = NeuralNetwork(2, 2)
@@ -211,3 +216,5 @@ if __name__ == '__main__':
     print(Net2.Network[8])
     print(Net2.Network[9])
     print(Net2.Network[10])
+
+    Net2.LogGraph('', 'Net2')
