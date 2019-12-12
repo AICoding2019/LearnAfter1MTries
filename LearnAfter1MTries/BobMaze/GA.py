@@ -285,7 +285,7 @@ class GA:
         self.Generation = 0
         self.Busy =True
 
-        self.map=Map()
+        self.map = Map()
 
     def CreateStartPopulation(self):
         for genome in range(0, self.PopSize):
