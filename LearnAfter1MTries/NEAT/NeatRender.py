@@ -13,7 +13,7 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
 
-class TestEnviron:
+class GraphWindow:
     def __init__(self):
         self.all_sprites = pg.sprite.LayeredUpdates()
         self.perceptron = pg.sprite.Group()
@@ -30,12 +30,17 @@ class TestEnviron:
         self.all_sprites.draw(self.screen)
         pg.display.flip()
 
-    def perceptronDraw(self, x, y, perceptronInfo):
-        Perceptron(self, x, y, perceptronInfo)
+    def eventManager(self):
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    pg.quit()
 
 
 class Perceptron(pg.sprite.Sprite):
-    def __init__(self, environ, x, y, perceptronInfo, TILESIZE, OFFSET):
+    def __init__(self, environ, x, y, perceptronInfo, TILESIZE, XOFFSET, YOFFSET):
         self._layer = 3
         self.groups = environ.all_sprites, environ.perceptron
         pg.sprite.Sprite.__init__(self, self.groups)
@@ -47,8 +52,8 @@ class Perceptron(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.x = x
         self.y = y
-        self.rect.x = x * TILESIZE
-        self.rect.y = y * TILESIZE
+        self.rect.x = (x + XOFFSET) * TILESIZE
+        self.rect.y = (y + YOFFSET) * TILESIZE
 
         if perceptronInfo['Recurrent']:
             self.image.fill(LIGHTGREY)
@@ -60,17 +65,15 @@ class Perceptron(pg.sprite.Sprite):
         elif perceptronInfo['Activation'] == 'relu':
             pg.draw.circle(self.image, GREEN, (32, 32), 32)
         elif perceptronInfo['Activation'] == 'leakyRelu':
-            pg.draw.circle(self.image, RED, (x, y), 32)
+            pg.draw.circle(self.image, BLUE, (32, 32), 32)
         elif perceptronInfo['Activation'] == 'tanh':
-            pg.draw.circle(self.image, RED, (32, 32), 32)
+            pg.draw.circle(self.image, YELLOW, (32, 32), 32)
         elif perceptronInfo['Activation'] == 'linear':
-            pg.draw.circle(self.image, RED, (32, 32), 32)
-
-
+            pg.draw.circle(self.image, DARKGREY, (32, 32), 32)
 
 
 if __name__ == '__main__':
-    Environ = TestEnviron()
+    Environ = GraphWindow()
     perceptronInfoDict = {'Enable': True,
                           'Activation': 'sigmoid',
                           'Recurrent': False
@@ -89,19 +92,14 @@ if __name__ == '__main__':
                            'Recurrent': True
                            }
 
-    testNode1 = Perceptron(Environ, 0, 0, perceptronInfoDict, 64, 0)
-    testNode2 = Perceptron(Environ, 0, 1, perceptronInfoDict2, 64, 0)
-    testNode3 = Perceptron(Environ, 0, 2, perceptronInfoDict3, 64, 0)
-    testNode4 = Perceptron(Environ, 0, 3, perceptronInfoDict4, 64, 0)
+    testNode1 = Perceptron(Environ, 0, 0, perceptronInfoDict, 64, 0, 2)
+    testNode2 = Perceptron(Environ, 0, 1, perceptronInfoDict2, 64, 0, 2)
+    testNode3 = Perceptron(Environ, 0, 2, perceptronInfoDict3, 64, 0, 2)
+    testNode4 = Perceptron(Environ, 0, 3, perceptronInfoDict4, 64, 0, 2)
 
-while True:
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
-            pg.quit()
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_ESCAPE:
-                pg.quit()
+    testNode1 = Perceptron(Environ, 1, 0, perceptronInfoDict, 64, 0, 3)
+    testNode2 = Perceptron(Environ, 1, 1, perceptronInfoDict2, 64, 0, 3)
 
-    Environ.draw()
+    ##Environ.draw()
 
     # pg.display.update()

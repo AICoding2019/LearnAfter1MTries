@@ -3,6 +3,7 @@ import json
 import numpy as np
 from random import random
 from random import choice
+from LearnAfter1MTries.NEAT import NeatRender
 
 
 class Neuron:
@@ -103,13 +104,13 @@ class NeuralNetwork:
         # Each Input connected to each output neuron and it activation function is a sigmoid
         for outs in range(0, self.numOutputs):
             neuron = self.Neuron.neuron.copy()
-            neuron['Layer'] = -1
+            neuron['Layer'] = 0
             neuron['ActivationFunction'] = choice(self.activationFunc)
             neuron['ID'] = outs
             neuron['NodeNum'] = outs
             neuron['Weights'] = [random() for inputs in range(0, self.numInputs)]
             neuron['Bias'] = random()
-            neuron['Recurrent'] = random()
+            neuron['Recurrent'] = choice([0, 1])
             neuron['Enabled'] = choice([0, 1])
             neuron['Output'] = 0
             self.Network.append(neuron)
@@ -143,22 +144,22 @@ class NeuralNetwork:
                         nextnextLayerInput = []
 
     @staticmethod
-    def UserDefineGraph(numInputs, HiddenLayers, numOutputs, activationFunction='relu'):
+    def UserDefineGraph(numInputs, HiddenLayers, numOutputs, activationFunction='relu',recurrent=0):
         network = NeuralNetwork(numInputs, numOutputs)
         neuron = network.Neuron.neuron
 
         ID = 0
         for layer, nodes in enumerate(HiddenLayers):
             neuron['Layer'] = layer
-            for node in range(0, nodes):
+            for nodeNum, node in enumerate(range(0, nodes)):
                 neuron['ID'] = ID
                 neuron['Weights'] = [random() for inputs in range(0, nodes)]
                 neuron['Bias'] = random()
                 neuron['ActivationFunction'] = activationFunction
-                neuron['Recurrent'] = random()
+                neuron['Recurrent'] = recurrent
                 neuron['Enabled'] = 1
                 neuron['Output'] = 0
-                neuron['NodeNum'] = ID
+                neuron['NodeNum'] = nodeNum
                 ID += 1
                 network.Network.append(neuron.copy())
 
@@ -181,20 +182,37 @@ class NeuralNetwork:
         return network
 
     def DrawGraph(self):
-        pass
+        graphWindow = NeatRender.GraphWindow()
+        perceptronInfoDict = {'Enable': True,
+                              'Activation': 'sigmoid',
+                              'Recurrent': False
+                              }
+        for node in self.Network:
+            perceptronInfoDict['Enable'] = node['Enabled']
+            perceptronInfoDict['Activation'] = node['ActivationFunction']
+            perceptronInfoDict['Recurrent'] = node['Recurrent']
+
+            NeatRender.Perceptron(graphWindow, node['Layer'], node['NodeNum'], perceptronInfoDict, 64, 0, 2)
+
+        while True:
+            graphWindow.draw()
+            graphWindow.eventManager()
 
     def LogGraph(self, directory, filename):
-        with open(directory  + filename + '.json', 'w') as json_file:
+        with open(directory + filename + '.json', 'w') as json_file:
             json.dump(self.NeuralNet, json_file, indent=4)
 
 
 if __name__ == '__main__':
-    # Net = NeuralNetwork(2, 2)
+    Net = NeuralNetwork(2, 3)
     # print(Net.Network[0])
     # print(Net.Network[1])
     # print('-----')
     # Net.UpdateGraph([1, 1])
     # print(Net.Network)
+
+    Net.CreateInitialGraph()
+    Net.DrawGraph()
 
     hiddenLayers = [2, 3, 4]  # [2, 10]
     Net2 = NeuralNetwork.UserDefineGraph(1, hiddenLayers, 2)
@@ -218,3 +236,5 @@ if __name__ == '__main__':
     print(Net2.Network[10])
 
     Net2.LogGraph('', 'Net2')
+
+    Net2.DrawGraph()
