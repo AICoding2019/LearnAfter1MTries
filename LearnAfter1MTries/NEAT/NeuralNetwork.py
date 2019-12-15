@@ -15,7 +15,7 @@ class Neuron:
             'Enabled': 1,
             'Recurrent': [],
             'Layer': [],
-            'ActivationFunction': [],
+            'Activation': [],
             'NodeNum': 0,
             'Inputs': [],
             'Output': 0,
@@ -61,19 +61,19 @@ class Neuron:
         Output = inputs.dot(weights.transpose()) + bias + Out * recurrent
         # print('Output {}'.format(Output))
 
-        if self.neuron['ActivationFunction'] == 'sigmoid':
+        if self.neuron['Activation'] == 'sigmoid':
             self.neuron['Output'] = self.Sigmoid(Output)
 
-        if self.neuron['ActivationFunction'] == 'relu':
+        if self.neuron['Activation'] == 'relu':
             self.neuron['Output'] = self.Relu(Output)
 
-        if self.neuron['ActivationFunction'] == 'tanh':
+        if self.neuron['Activation'] == 'tanh':
             self.neuron['Output'] = self.Tanh(Output)
 
-        if self.neuron['ActivationFunction'] == 'leakyRelu':
+        if self.neuron['Activation'] == 'leakyRelu':
             self.neuron['Output'] = self.LeakyRelu(Output)
 
-        if self.neuron['ActivationFunction'] == 'linear':
+        if self.neuron['Activation'] == 'linear':
             self.neuron['Output'] = self.Linear(Output)
 
         # print('Act Output {}'.format(self.neuron['Output']))
@@ -93,9 +93,8 @@ class NeuralNetwork:
             'Output': None,
             'Layers': 0,
             'Species': [-1, -1],  # [ num hiddenlayers, layers]
+            'MaxNodes': None
         }
-
-    # self.CreateInitialGraph()
 
     def __str__(self):
         return '<%s>' % self.Network
@@ -105,7 +104,7 @@ class NeuralNetwork:
         for outs in range(0, self.numOutputs):
             neuron = self.Neuron.neuron.copy()
             neuron['Layer'] = 0
-            neuron['ActivationFunction'] = choice(self.activationFunc)
+            neuron['Activation'] = choice(self.activationFunc)
             neuron['ID'] = outs
             neuron['NodeNum'] = outs
             neuron['Weights'] = [random() for inputs in range(0, self.numInputs)]
@@ -118,6 +117,7 @@ class NeuralNetwork:
 
         self.NeuralNet['Network'] = self.Network
         self.NeuralNet['Species'] = [0, self.numOutputs]
+        self.NeuralNet['MaxNodes'] = max(self.numOutputs, self.numInputs)
 
     def UpdateGraph(self, NetInputs):
         nextLayerInput = []
@@ -144,10 +144,11 @@ class NeuralNetwork:
                         nextnextLayerInput = []
 
     @staticmethod
-    def UserDefineGraph(numInputs, HiddenLayers, numOutputs, activationFunction='relu',recurrent=0):
+    def UserDefineGraph(numInputs, HiddenLayers, numOutputs, activation='relu', recurrent=0):
         network = NeuralNetwork(numInputs, numOutputs)
         neuron = network.Neuron.neuron
-
+        species = HiddenLayers.copy()
+        species.append(numOutputs)
         ID = 0
         for layer, nodes in enumerate(HiddenLayers):
             neuron['Layer'] = layer
@@ -155,7 +156,7 @@ class NeuralNetwork:
                 neuron['ID'] = ID
                 neuron['Weights'] = [random() for inputs in range(0, nodes)]
                 neuron['Bias'] = random()
-                neuron['ActivationFunction'] = activationFunction
+                neuron['Activation'] = activation
                 neuron['Recurrent'] = recurrent
                 neuron['Enabled'] = 1
                 neuron['Output'] = 0
@@ -168,32 +169,43 @@ class NeuralNetwork:
             neuron['ID'] = ID
             neuron['Weights'] = [random() for inputs in range(0, nodes)]
             neuron['Bias'] = random()
-            neuron['ActivationFunction'] = activationFunction
-            neuron['Recurrent'] = random()
+            neuron['Activation'] = activation
+            neuron['Recurrent'] = recurrent
             neuron['Enabled'] = 1
             neuron['Output'] = 0
-            neuron['NodeNum'] = ID
+            neuron['NodeNum'] = outs
             ID += 1
             network.Network.append(neuron.copy())
 
         network.NeuralNet['Network'] = network.Network
         network.NeuralNet['Layers'] = len(HiddenLayers) + 1
-        network.NeuralNet['Species'] = [len(HiddenLayers), ID]
+        network.NeuralNet['Species'] = species.copy()
+        species.insert(0, numInputs)
+        network.NeuralNet['MaxNodes'] = max(species)
         return network
 
-    def DrawGraph(self):
-        graphWindow = NeatRender.GraphWindow()
-        perceptronInfoDict = {'Enable': True,
-                              'Activation': 'sigmoid',
-                              'Recurrent': False
-                              }
+    def DrawGraph(self, graphWindow, tileSize=64, offset=0):
+        inputOffset = (self.NeuralNet['MaxNodes'] - self.numInputs) / 2
+        for inputs in range(0, self.numInputs):
+            NeatRender.Inputs(graphWindow, 0, inputs, tileSize, offset, inputOffset)
+
         for node in self.Network:
-            perceptronInfoDict['Enable'] = node['Enabled']
-            perceptronInfoDict['Activation'] = node['ActivationFunction']
-            perceptronInfoDict['Recurrent'] = node['Recurrent']
 
-            NeatRender.Perceptron(graphWindow, node['Layer'], node['NodeNum'], perceptronInfoDict, 64, 0, 2)
+            if node['Layer'] != -1:
+                nodeXpos = node['Layer'] + 1
+            else:
+                nodeXpos = self.NeuralNet['Layers']
 
+            elements = self.NeuralNet['Species'][node['Layer']]
+            nodeOffset = (self.NeuralNet['MaxNodes'] - elements) / 2
+
+            NeatRender.Perceptron(graphWindow, nodeXpos,
+                                  node['NodeNum'], node['Enabled'], node['Activation'], node['Recurrent'],
+                                  tileSize, offset, nodeOffset)
+
+    def InternalDrawGraph(self):
+        graphWindow = NeatRender.GraphWindow()
+        self.DrawGraph(graphWindow,tileSize=64, offset=4)
         while True:
             graphWindow.draw()
             graphWindow.eventManager()
@@ -212,29 +224,29 @@ if __name__ == '__main__':
     # print(Net.Network)
 
     Net.CreateInitialGraph()
-    Net.DrawGraph()
+    # Net.DrawGraph()
 
-    hiddenLayers = [2, 3, 4]  # [2, 10]
-    Net2 = NeuralNetwork.UserDefineGraph(1, hiddenLayers, 2)
+    hiddenLayers = [5, 3, 4]  # [2, 10]
+    Net2 = NeuralNetwork.UserDefineGraph(3, hiddenLayers, 5)
     # print(Net2.NeuralNet['Species'])
     Net2.UpdateGraph([1])
     # print(Net2.NeuralNet['Network'][0])
     # print(Net2.NeuralNet['Network'][0])
     # print(Net2.NeuralNet['Network'][-1]['Output'])
 
-    print('----')
-    print(Net2.Network[0])
-    print(Net2.Network[1])
-    print(Net2.Network[2])
-    print(Net2.Network[3])
-    print(Net2.Network[4])
-    print(Net2.Network[5])
-    print(Net2.Network[6])
-    print(Net2.Network[7])
-    print(Net2.Network[8])
-    print(Net2.Network[9])
-    print(Net2.Network[10])
+    # print('----')
+    # print(Net2.Network[0])
+    # print(Net2.Network[1])
+    # print(Net2.Network[2])
+    # print(Net2.Network[3])
+    # print(Net2.Network[4])
+    # print(Net2.Network[5])
+    # print(Net2.Network[6])
+    # print(Net2.Network[7])
+    # print(Net2.Network[8])
+    # print(Net2.Network[9])
+    # print(Net2.Network[10])
 
-    Net2.LogGraph('', 'Net2')
+    # Net2.LogGraph('', 'Net2')
 
-    Net2.DrawGraph()
+    Net2.InternalDrawGraph()

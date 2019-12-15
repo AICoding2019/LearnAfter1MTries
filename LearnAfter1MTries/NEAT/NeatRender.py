@@ -11,6 +11,7 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
+MAGENTA = (0, 255, 255)
 
 
 class GraphWindow:
@@ -19,7 +20,7 @@ class GraphWindow:
         self.perceptron = pg.sprite.Group()
         self.screen = pg.display.set_mode((600, 600))
         pg.display.set_caption("Test NN render")
-
+        self.clock = pg.time.Clock()
         pg.init()
         self.font = pg.font.Font(pg.font.get_default_font(), 20)
         self.renderText = self.font.render("Start", True, (0, 128, 0))
@@ -29,6 +30,7 @@ class GraphWindow:
         # self.screen.blit("NN", (10, 700))
         self.all_sprites.draw(self.screen)
         pg.display.flip()
+        self.clock.tick(1)
 
     def eventManager(self):
         for event in pg.event.get():
@@ -40,7 +42,7 @@ class GraphWindow:
 
 
 class Perceptron(pg.sprite.Sprite):
-    def __init__(self, environ, x, y, perceptronInfo, TILESIZE, XOFFSET, YOFFSET):
+    def __init__(self, environ, x=0, y=0,Enabled=True, Activation=True, Recurrent=True, TILESIZE=64, XOFFSET=0, YOFFSET=0):
         self._layer = 3
         self.groups = environ.all_sprites, environ.perceptron
         pg.sprite.Sprite.__init__(self, self.groups)
@@ -48,58 +50,68 @@ class Perceptron(pg.sprite.Sprite):
         self.environ = environ
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(WHITE)
-        # pg.draw.circle(self.image, RED, (32, 32), 32)
+        #pg.draw.circle(self.image, MAGENTA, (32, 32), 32)
         self.rect = self.image.get_rect()
         self.x = x
         self.y = y
         self.rect.x = (x + XOFFSET) * TILESIZE
         self.rect.y = (y + YOFFSET) * TILESIZE
 
-        if perceptronInfo['Recurrent']:
+        if Recurrent:
             self.image.fill(LIGHTGREY)
 
-        if not perceptronInfo['Enable']:
+        if not Enabled:
             pg.draw.circle(self.image, DISABLEGREY, (32, 32), 32)
-        elif perceptronInfo['Activation'] == 'sigmoid':
+        elif Activation== 'sigmoid':
             pg.draw.circle(self.image, RED, (32, 32), 32)
-        elif perceptronInfo['Activation'] == 'relu':
+        elif Activation == 'relu':
             pg.draw.circle(self.image, GREEN, (32, 32), 32)
-        elif perceptronInfo['Activation'] == 'leakyRelu':
+        elif Activation == 'leakyRelu':
             pg.draw.circle(self.image, BLUE, (32, 32), 32)
-        elif perceptronInfo['Activation'] == 'tanh':
+        elif Activation == 'tanh':
             pg.draw.circle(self.image, YELLOW, (32, 32), 32)
-        elif perceptronInfo['Activation'] == 'linear':
+        elif Activation == 'linear':
             pg.draw.circle(self.image, DARKGREY, (32, 32), 32)
+
+
+class Inputs(pg.sprite.Sprite):
+    def __init__(self, environ, x, y, TILESIZE, XOFFSET, YOFFSET):
+        self._layer = 3
+        self.groups = environ.all_sprites, environ.perceptron
+        pg.sprite.Sprite.__init__(self, self.groups)
+
+        self.environ = environ
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(WHITE)
+        pg.draw.circle(self.image, MAGENTA, (32, 32), 32)
+        self.rect = self.image.get_rect()
+        self.x = x
+        self.y = y
+        self.rect.x = (x + XOFFSET) * TILESIZE
+        self.rect.y = (y + YOFFSET) * TILESIZE
+
+
+class Outputs(pg.sprite.Sprite):
+    def __init__(self, environ, x, y, TILESIZE, XOFFSET, YOFFSET):
+        self._layer = 3
+        self.groups = environ.all_sprites, environ.perceptron
+        pg.sprite.Sprite.__init__(self, self.groups)
+
+        self.environ = environ
+        self.image = pg.Surface((TILESIZE, TILESIZE))
+        self.image.fill(WHITE)
+        pg.draw.circle(self.image, MAGENTA, (32, 32), 32)
+        self.rect = self.image.get_rect()
+        self.x = x
+        self.y = y
+        self.rect.x = (x + XOFFSET) * TILESIZE
+        self.rect.y = (y + YOFFSET) * TILESIZE
 
 
 if __name__ == '__main__':
     Environ = GraphWindow()
-    perceptronInfoDict = {'Enable': True,
-                          'Activation': 'sigmoid',
-                          'Recurrent': False
-                          }
-    perceptronInfoDict2 = {'Enable': True,
-                           'Activation': 'relu',
-                           'Recurrent': False
-                           }
+    testNode1 = Perceptron(Environ)
 
-    perceptronInfoDict3 = {'Enable': False,
-                           'Activation': 'sigmoid',
-                           'Recurrent': False
-                           }
-    perceptronInfoDict4 = {'Enable': False,
-                           'Activation': 'relu',
-                           'Recurrent': True
-                           }
-
-    testNode1 = Perceptron(Environ, 0, 0, perceptronInfoDict, 64, 0, 2)
-    testNode2 = Perceptron(Environ, 0, 1, perceptronInfoDict2, 64, 0, 2)
-    testNode3 = Perceptron(Environ, 0, 2, perceptronInfoDict3, 64, 0, 2)
-    testNode4 = Perceptron(Environ, 0, 3, perceptronInfoDict4, 64, 0, 2)
-
-    testNode1 = Perceptron(Environ, 1, 0, perceptronInfoDict, 64, 0, 3)
-    testNode2 = Perceptron(Environ, 1, 1, perceptronInfoDict2, 64, 0, 3)
-
-    ##Environ.draw()
+    Environ.draw()
 
     # pg.display.update()
