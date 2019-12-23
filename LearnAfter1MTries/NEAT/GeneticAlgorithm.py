@@ -264,6 +264,7 @@ class GA:
             decode = self.Decode(genome['chromo'])
 
             genome['Fitness'], genome['Info'] = fitnessTest(decode)
+            #print( f"Update:   {genome['Fitness']} {genome['Info']}")
             self.TotalFitnessScore += genome['Fitness']
             self.data.append(genome['Fitness'])
 
@@ -276,6 +277,7 @@ class GA:
 
             if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
                 self.FittestGenomeEver = self.FittestGenome.copy()
+        #print(f"----{self.FittestGenomeEver['Fitness']} {self.FittestGenomeEver['Info']}")
 
     def GenerateBabies(self):
         NewBabies = 0
@@ -315,6 +317,7 @@ class GA:
 
             self.InfoBoard()
             self.PlotData()
+            print('------')
 
         print('done with loop')
 
@@ -328,7 +331,7 @@ class GA:
     def Statistics(self):
         dataMean = np.mean(self.data)
         dataStd = np.std(self.data)
-        bins = np.array(range(0, len(self.data))) / len(self.data)
+        bins = np.array(range(0,100))/100#np.array(range(0, len(self.data))) / len(self.data)
         self.x.append(self.Generation - 1)
 
         self.dataMeanStored.append(dataMean)
@@ -373,8 +376,8 @@ class GA:
     def InfoBoard(self):
         self.progressGen(self.FittestGenome['Info'], fittestEver=False)
         self.progressOverall(self.FittestGenomeEver['Info'], fittestEver=True)
-        self.infoBoard(f"Generation= {self.Generation} "
-                       f"best fitness score ={self.BestFitnessScore:.3f}={self.FittestGenome['Fitness']:.3f}"
+        self.infoBoard(f"Gen= {self.Generation} "
+                       f"best score ={self.BestFitnessScore:.3f}={self.FittestGenome['Fitness']:.3f}"
                        f" Total fitness={self.TotalFitnessScore:.3f}"
                        f" fitness Info{self.FittestGenome['Info']}"
                        f" fitness Ever Info{self.FittestGenomeEver['Info']}"
