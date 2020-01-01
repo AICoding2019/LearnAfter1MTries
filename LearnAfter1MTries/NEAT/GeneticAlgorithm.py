@@ -43,7 +43,7 @@ def MutateRandomResetting(chromo, mutationRate, chromoRange):
     '''https: // www.geeksforgeeks.org / mutation - algorithms -
     ''for -string - manipulation - ga /
     '''''''''
-    mutation = chromo.copy
+    mutation = chromo.copy()
     randomIndex = rd.randrange(len(chromo))
 
     if random() < mutationRate:
@@ -53,17 +53,53 @@ def MutateRandomResetting(chromo, mutationRate, chromoRange):
 
 
 def MutateSwap(chromo, mutationRate):
-    mutation = chromo.copy
+    mutation = chromo.copy()
     randomIndex1 = rd.randrange(len(chromo))
     randomIndex2 = rd.randrange(len(chromo))
 
     if random() < mutationRate:
-        mutation[randomIndex1], mutation[randomIndex2] = mutation[randomIndex2], mutation[randomIndex1]
+        mutation['chromo'][randomIndex1], mutation['chromo'][randomIndex2] = \
+            mutation['chromo'][randomIndex2], mutation['chromo'][randomIndex1]
 
     return mutation
 
 
-def CrossOverPartiallyMapped(mum, dad, crossOverRate, chromoLength):
+def CrossOverPartiallyMapped(Mum, Dad, chromoLength, crossOverRate=0.7):
+    mum = Mum.copy()
+    dad = Dad.copy()
+    randomIndex1 = rd.randrange(chromoLength)
+    randomIndex2 = rd.randrange(chromoLength)
+
+    if randomIndex1 < randomIndex2:
+        beginning = randomIndex1
+        end = randomIndex2
+    else:
+        beginning = randomIndex2
+        end = randomIndex1
+
+    mumSwap = mum['chromo'][beginning:end]
+    dadSwap = dad['chromo'][beginning:end]
+
+    mumMap0 = 0
+    mumMap1 = 0
+
+    dadMap0 = 0
+    dadMap1 = 0
+    # find the index of elements needed to swap
+    for mumSwapElement, dadSwapElement in zip(mumSwap, dadSwap):
+        for index, (mumElement, dadElement) in enumerate(zip(mum['chromo'], dad['chromo'])):
+            if mumElement == mumSwapElement:
+                mumMap0 = index
+            if mumElement == dadSwapElement:
+                mumMap1 = index
+
+            if dadElement == mumSwapElement:
+                dadMap0 = index
+            if dadElement == dadSwapElement:
+                dadMap1 = index
+        mum['chromo'][mumMap0], mum['chromo'][mumMap1] = mum['chromo'][mumMap1], mum['chromo'][mumMap0]
+        dad['chromo'][dadMap0], dad['chromo'][dadMap1] = dad['chromo'][dadMap1], dad['chromo'][dadMap0]
+
     baby1 = mum.copy()
     baby2 = dad.copy()
     return baby1, baby2
@@ -76,12 +112,6 @@ def CrossOverOrder(mum, dad, crossOverRate, chromoLength):
 
 
 def CrossOverAlternatingPosition(mum, dad, crossOverRate, chromoLength):
-    baby1 = mum.copy()
-    baby2 = dad.copy()
-    return baby1, baby2
-
-
-def CrossOverMaximalPreservation(mum, dad, crossOverRate, chromoLength):
     baby1 = mum.copy()
     baby2 = dad.copy()
     return baby1, baby2
@@ -105,7 +135,7 @@ def CrossOverRandomSwapPoint(mum, dad, crossOverRate, chromoLength):
 
     # just return parents as offspring dependent on the rate
     # or if parents are the same
-    if random() > crossOverRate: #or mum['chromo'] == dad['chromo']:
+    if random() > crossOverRate:  # or mum['chromo'] == dad['chromo']:
         baby1 = mum.copy()
         baby2 = dad.copy()
         return baby1, baby2
@@ -130,7 +160,8 @@ def CrossOverRealNumber(mum, dad, crossOverRate, chromoLength):
 
 
 def DecodeRealNumber(chromo, DecodeDict):
-    return 0
+    decoded = [DecodeDict[gene] for gene in chromo]
+    return decoded
 
 
 def DecodeString(chromo, DecodeDict):
@@ -182,20 +213,33 @@ class GA:
         self.dataStdStored = []
         self.data = []
         self.x = []
-        self.plots =0
+        self.plots = 0
 
     def CreateStartPopulation(self):
-        for genome in range(0, self.PopSize):
-            Genomes = {'chromo': [randint(0, 1) for bit in range(0, self.ChromoLength)],
-                       'Fitness': 0,
-                       'Info': []
-                       }
-            self.ListGenomes.append(Genomes)
+        if self.chromoType == 'Binary':
+            for genome in range(0, self.PopSize):
+                Genomes = {'chromo': [randint(0, 1) for bit in range(0, self.ChromoLength)],
+                           'Fitness': 0,
+                           'Info': []
+                           }
+                self.ListGenomes.append(Genomes)
 
-        self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
-                                  'Fitness': 0,
-                                  'Info': []
-                                  }
+            self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
+                                      'Fitness': 0,
+                                      'Info': []
+                                      }
+        if self.chromoType == 'RealNumberInt':
+            for genome in range(0, self.PopSize):
+                Genomes = {'chromo': [randint(0, max(self.DecodeDict.keys())) for bit in range(0, self.ChromoLength)],
+                           'Fitness': 0,
+                           'Info': []
+                           }
+                self.ListGenomes.append(Genomes)
+
+            self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
+                                      'Fitness': 0,
+                                      'Info': []
+                                      }
         self.FittestGenome = self.FittestGenomeEver.copy()
         self.BestFitnessScore = 0
         self.TotalFitnessScore = 0
@@ -204,7 +248,7 @@ class GA:
     def Mutate(self, chromo):
 
         if self.mutateType == 'RealNumber':
-            return MutateRealNumber(chromo, self.MutationRate)
+            return MutateSwap(chromo, self.MutationRate)
 
         if self.mutateType == 'Binary':
             return MutateBitFlip(chromo, self.MutationRate)
@@ -218,7 +262,7 @@ class GA:
             return CrossOverRandomSwapPoint(mum, dad, self.CrossOverRate, self.ChromoLength)
 
         if self.crossOverType == 'partiallyMapped':
-            return CrossOverPartiallyMapped(mum, dad, self.CrossOverRate, self.ChromoLength)
+            return CrossOverPartiallyMapped(mum, dad, self.ChromoLength, crossOverRate=self.CrossOverRate)
 
     def Selection(self):
         if self.selectionType == 'rouletteWheel':
@@ -259,12 +303,12 @@ class GA:
     def UpdateFitnessScores(self, fitnessTest):
         self.BestFitnessScore = 0
         self.TotalFitnessScore = 0
-
+        # print(f'Update :{self.ListGenomes}')
         for genome in self.ListGenomes:
             decode = self.Decode(genome['chromo'])
 
             genome['Fitness'], genome['Info'] = fitnessTest(decode)
-            #print( f"Update:   {genome['Fitness']} {genome['Info']}")
+            # print( f"Update:   {genome['Fitness']} {genome['Info']}")
             self.TotalFitnessScore += genome['Fitness']
             self.data.append(genome['Fitness'])
 
@@ -277,7 +321,7 @@ class GA:
 
             if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
                 self.FittestGenomeEver = self.FittestGenome.copy()
-        #print(f"----{self.FittestGenomeEver['Fitness']} {self.FittestGenomeEver['Info']}")
+        # print(f"----{self.FittestGenomeEver['Fitness']} {self.FittestGenomeEver['Info']}")
 
     def GenerateBabies(self):
         NewBabies = 0
@@ -299,7 +343,7 @@ class GA:
 
     def Decode(self, chromo):
 
-        if self.chromoType == 'RealNumber':
+        if self.chromoType == 'RealNumberInt':
             return DecodeRealNumber(chromo, self.DecodeDict)
 
         if self.chromoType == 'Binary':
@@ -331,7 +375,7 @@ class GA:
     def Statistics(self):
         dataMean = np.mean(self.data)
         dataStd = np.std(self.data)
-        bins = np.array(range(0,100))/100#np.array(range(0, len(self.data))) / len(self.data)
+        bins = np.array(range(0, 100)) / 100  # np.array(range(0, len(self.data))) / len(self.data)
         self.x.append(self.Generation - 1)
 
         self.dataMeanStored.append(dataMean)
@@ -352,7 +396,7 @@ class GA:
         ax3 = fig.add_subplot(413)
         ax4 = fig.add_subplot(414)
 
-        ax1.set_xlim([0, 1.1])
+        ax1.set_xlim([0, 2])
         meanPlotData, = ax2.plot(dat)
         ax2.set_xlim([0, self.numGeneration])
         stdPlotData, = ax3.plot(dat)
@@ -386,3 +430,7 @@ class GA:
 
 if __name__ == '__main__':
     print("GA")
+    mum = [2, 5, 0, 3, 6, 1, 4, 7]
+    dad = [3, 4, 0, 7, 2, 5, 1, 6]
+    print(mum)
+    print(CrossOverPartiallyMapped(mum, dad, len(mum), crossOverRate=0.7))

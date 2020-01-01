@@ -125,15 +125,17 @@ class Maze:
         self.Bob.x = self.BobStartX
         self.Bob.y = self.BobStartY
 
-        for direction in directions:
-            x, y = self.Bob.move(direction)
+        for numSteps,direction in enumerate(directions):
+            self.Bob.move(direction)
             self.draw()
+            if self.Bob.x == self.ExitX and self.Bob.y == self.ExitY:
+                break
 
         dist = math.sqrt((self.Bob.x - self.ExitX) ** 2 + (self.Bob.y - self.ExitY) ** 2)
-        invDist = 1 / (dist + 1)
-        endPoint = (self.Bob.x, self.Bob.y)
+        invDist = 1 / (dist + 1) + 1/numSteps
+        endPoint = (self.Bob.x, self.Bob.y, numSteps)
 
-        #print(f"EndPoint: {invDist} {endPoint} {dist} {(self.ExitX,self.ExitY)}")
+        # print(f"EndPoint: {invDist} {endPoint} {dist} {(self.ExitX,self.ExitY)}")
 
         # self.reset()
         return invDist, endPoint
@@ -237,17 +239,23 @@ class Bob(pygame.sprite.Sprite):
         return dx, dy
 
 
-# def update(self):
-# print(f'x {self.rect.x}, y {self.rect.y}')
-
-
 if __name__ == '__main__':
     testEnviron = Maze()
     decodeDict = {0: 'North',
                   1: 'South',
                   2: 'East',
                   3: 'West'}
-    test = GA(PopSize=1000, ChromoLength=32, DecodeDict=decodeDict, numGeneration=100, MutationRate=0.01,
+    # test = GA(PopSize=1000, ChromoLength=64, DecodeDict=decodeDict, numGeneration=100, MutationRate=0.01,
+    #           fitnessTest=testEnviron.TestRoute,
+    #           selectionType='rouletteWheel',
+    #           infoBoard=testEnviron.infoBoard,
+    #           progressGen=testEnviron.EndPointDraw,
+    #           progressOverall=testEnviron.EndPointDraw)
+
+    test = GA(PopSize=100, numGeneration=100, CrossOverRate=0.7, MutationRate=0.001, ChromoLength=64, GeneLength=2,
+              crossOverType='partiallyMapped', mutateType='RealNumber',
+              chromoType='RealNumberInt',
+              DecodeDict=decodeDict,
               fitnessTest=testEnviron.TestRoute,
               selectionType='rouletteWheel',
               infoBoard=testEnviron.infoBoard,

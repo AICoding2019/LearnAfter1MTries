@@ -14,6 +14,7 @@ class Neuron:
             'Bias': [],
             'Enabled': 1,
             'Recurrent': [],
+            'RecurrentWeight': [],
             'Layer': [],
             'Activation': [],
             'NodeNum': 0,
@@ -57,8 +58,9 @@ class Neuron:
         bias = np.array(self.neuron['Bias'])
         Out = self.neuron['Output']
         recurrent = self.neuron['Recurrent']
+        recurrentWeight = self.neuron['RecurrentWeight']
 
-        Output = inputs.dot(weights.transpose()) + bias + Out * recurrent
+        Output = inputs.dot(weights.transpose()) + bias + Out * recurrent * recurrentWeight
         # print('Output {}'.format(Output))
 
         if self.neuron['Activation'] == 'sigmoid':
@@ -110,6 +112,7 @@ class NeuralNetwork:
             neuron['Weights'] = [random() for inputs in range(0, self.numInputs)]
             neuron['Bias'] = random()
             neuron['Recurrent'] = choice([0, 1])
+            neuron['RecurrentWeight'] = random()
             neuron['Enabled'] = choice([0, 1])
             neuron['Output'] = 0
             self.Network.append(neuron)
@@ -158,6 +161,7 @@ class NeuralNetwork:
                 neuron['Bias'] = random()
                 neuron['Activation'] = activation
                 neuron['Recurrent'] = recurrent
+                neuron['RecurrentWeight'] = random()
                 neuron['Enabled'] = 1
                 neuron['Output'] = 0
                 neuron['NodeNum'] = nodeNum
@@ -171,6 +175,7 @@ class NeuralNetwork:
             neuron['Bias'] = random()
             neuron['Activation'] = activation
             neuron['Recurrent'] = recurrent
+            neuron['RecurrentWeight'] = random()
             neuron['Enabled'] = 1
             neuron['Output'] = 0
             neuron['NodeNum'] = outs
@@ -205,7 +210,7 @@ class NeuralNetwork:
 
     def InternalDrawGraph(self):
         graphWindow = NeatRender.GraphWindow()
-        self.DrawGraph(graphWindow,tileSize=64, offset=4)
+        self.DrawGraph(graphWindow, tileSize=64, offset=4)
         while True:
             graphWindow.draw()
             graphWindow.eventManager()
