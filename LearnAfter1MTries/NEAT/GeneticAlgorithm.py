@@ -374,7 +374,7 @@ class GA:
 
     def Statistics(self):
         dataMean = np.mean(self.data)
-        dataStd = np.std(self.data)
+        dataStmumd = np.std(self.data)
         bins = np.array(range(0, 100)) / 100  # np.array(range(0, len(self.data))) / len(self.data)
         self.x.append(self.Generation - 1)
 

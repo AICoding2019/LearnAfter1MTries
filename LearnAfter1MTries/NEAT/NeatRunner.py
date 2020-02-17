@@ -55,33 +55,65 @@ class Neat:
                      progressOverall=self.progressOverall)
 
     def GenerateBabies(self, mum, dad):
-        maxMumNode = -1
-        maxDadNode = -1
-        for mumNode in mum:
-            if mumNode > maxMumNode:
-                maxMumNode = mumNode
+        maxMumNodeNum = -1
+        maxDadNodeNum = -1
+        layers=0
+        baby1 = NeuralNetwork(self.numInputs, self.numOutputs)
+        baby2 = NeuralNetwork(self.numInputs, self.numOutputs)
 
-            for dadNode in dad:
-                if dadNode > maxDadNode:
-                    maxDadNode = dadNode
+        for mumNeuron in mum:
+            if mumNeuron['NodeNum'] > maxMumNodeNum:
+                maxMumNodeNum = mumNeuron['NodeNum']
 
-                if mumNode['Layer'] == dadNode['Layer']:
-                    if mumNode['NodeNum'] == dadNode['NodeNum']:
-                        baby1, baby2 = self.CrossOver(mum, dad)
-                        baby1 = self.Mutate(baby1)
-                        baby2 = self.Mutate(baby2)
+            for dadNeuron in dad:
+                if dadNeuron['NodeNum'] > maxDadNodeNum:
+                    maxDadNodeNum = dadNeuron['NodeNum']
 
-        for mumNode in mum:
-            if mumNode > maxDadNode:
-                self.Mutate(mumNode)
-                self.AddNodeOrNotAdd(mumNode, dad)
+                if mumNeuron['Layer'] == dadNeuron['Layer']:
+                    if mumNeuron['NodeNum'] == dadNeuron['NodeNum']:
+                        baby1Neuron, baby2Neuron = self.CrossOver(mumNeuron, dadNeuron)
+                        baby1Neuron = self.Mutate(baby1Neuron)
+                        baby2Neuron = self.Mutate(baby2Neuron)
+                        baby1.NeuralNet['Network'].append(baby1Neuron.copy())
+                        baby2.NeuralNet['Network'].append(baby2Neuron.copy())
 
-        for dadNode in dad:
-            if dadNode > maxMumNode:
-                self.Mutate(dadNode)
-                self.AddNodeOrNotAdd(dadNode, mum)
+                if mumNeuron['Layer'] > layers:
+                    layers= mumNeuron['Layer']
+
+                if dadNeuron['Layer'] > layers:
+                    layers= dadNeuron['Layer']
+
+        for mumNeuron in mum:
+            if mumNeuron['NodeNum'] > maxDadNodeNum:
+                neuron = self.Mutate(mumNeuron)
+                self.AddNodeOrNot(neuron, baby1.NeuralNet['Network'])
+
+        for dadNeuron in dad:
+            if dadNeuron['NodeNum'] > maxMumNodeNum:
+                neuron = self.Mutate(dadNeuron)
+                self.AddNodeOrNot(neuron, baby1.NeuralNet['Network'])
+
+        baby1 = self.MutateByAddingNode(baby1, baby1layers, baby1MaxNum)
+        baby2 = self.MutateByAddingNode(baby2, baby2layers, baby2MaxNum)
+
+        return baby1, baby2
+
+    def Mutate(self, neuron):
+        return neuron
+
+    def CrossOver(self, mumNeuron, dadNeuron):
+        return mumNeuron.copy(), dadNeuron.copy()
+
+    @staticmethod
+    def AddNodeOrNot(neuron, network):
+        if random() < 0.5:
+            network.AddNeuron(neuron)
 
 
+    def MutateByAddingNode(self,baby1,baby1layers,baby1MaxNum):
+        layers= 0
+
+        return baby
 
 
 if __name__ == '__main__':
