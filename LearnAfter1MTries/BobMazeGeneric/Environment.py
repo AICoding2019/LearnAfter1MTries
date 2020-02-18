@@ -1,6 +1,6 @@
 import pygame as pg
 import math
-from LearnAfter1MTries.NEAT.GeneticAlgorithm import GA
+from LearnAfter1MTries.TWEANN.GeneticAlgorithm import GA
 from LearnAfter1MTries.EventManager.EventManager import EventManager
 
 # define some colors (R, G, B)

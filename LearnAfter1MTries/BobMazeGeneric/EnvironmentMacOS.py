@@ -5,7 +5,7 @@ Another version of asteroid game, this time using the pygame Sprite class.
 import pygame
 from random import randint
 import math
-from LearnAfter1MTries.NEAT.GeneticAlgorithm import GA
+from LearnAfter1MTries.TWEANN.GeneticAlgorithm import GA
 
 # Initialize
 pygame.init()
@@ -87,7 +87,7 @@ class Maze:
         self.screen = pygame.display.set_mode(self.size)
 
         # Optionally, set a caption
-        pygame.display.set_caption("Bob Maze NEAT")
+        pygame.display.set_caption("Bob Maze TWEANN")
 
         # Create a Clock to control the frame rate
         self.clock = pygame.time.Clock()

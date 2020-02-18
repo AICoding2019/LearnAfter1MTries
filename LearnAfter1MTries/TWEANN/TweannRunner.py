@@ -1,7 +1,8 @@
-from LearnAfter1MTries.NEAT.GeneticAlgorithm import GA
-from LearnAfter1MTries.NEAT.NeuralNetwork import NeuralNetwork
-from LearnAfter1MTries.NEAT.GeneticAlgorithm import *
-import itertools
+from LearnAfter1MTries.TWEANN.GeneticAlgorithm import GA
+from LearnAfter1MTries.TWEANN.NeuralNetwork import NeuralNetwork, Neuron
+from LearnAfter1MTries.TWEANN.GeneticAlgorithm import *
+from random import random
+from random import choice
 
 
 class Neat:
@@ -57,7 +58,7 @@ class Neat:
     def GenerateBabies(self, mum, dad):
         maxMumNodeNum = -1
         maxDadNodeNum = -1
-        layers=0
+        layers = 0
         baby1 = NeuralNetwork(self.numInputs, self.numOutputs)
         baby2 = NeuralNetwork(self.numInputs, self.numOutputs)
 
@@ -78,10 +79,10 @@ class Neat:
                         baby2.NeuralNet['Network'].append(baby2Neuron.copy())
 
                 if mumNeuron['Layer'] > layers:
-                    layers= mumNeuron['Layer']
+                    layers = mumNeuron['Layer']
 
                 if dadNeuron['Layer'] > layers:
-                    layers= dadNeuron['Layer']
+                    layers = dadNeuron['Layer']
 
         for mumNeuron in mum:
             if mumNeuron['NodeNum'] > maxDadNodeNum:
@@ -109,9 +110,21 @@ class Neat:
         if random() < 0.5:
             network.AddNeuron(neuron)
 
-
-    def MutateByAddingNode(self,baby1,baby1layers,baby1MaxNum):
-        layers= 0
+    @staticmethod
+    def MutateByAddingNode(baby, babyLayers, babyMaxNum):
+        addNeuron = Neuron()
+        addNeuron.neuron['ID'] = [],
+        addNeuron.neuron['Weights'] = random(),
+        addNeuron.neuron['Bias'] = random(),
+        addNeuron.neuron['Enabled'] = 1,
+        addNeuron.neuron['Recurrent'] = choice([0, 1]),
+        addNeuron.neuron['RecurrentWeight'] = random(),
+        addNeuron.neuron['Layer'] = random.randrange(babyLayers+2),
+        addNeuron.neuron['Activation'] = choice(addNeuron.activationFunc),
+        addNeuron.neuron['NodeNum'] = 0,
+        addNeuron.neuron['Inputs'] = [],
+        addNeuron.neuron['Output'] = 0,
+        baby.AddNeuron(addNeuron)
 
         return baby
 

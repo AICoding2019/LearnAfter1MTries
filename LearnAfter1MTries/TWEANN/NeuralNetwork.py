@@ -3,7 +3,7 @@ import json
 import numpy as np
 from random import random
 from random import choice
-from LearnAfter1MTries.NEAT import NeatRender
+from LearnAfter1MTries.TWEANN import TweannRender
 
 
 class Neuron:
@@ -21,6 +21,7 @@ class Neuron:
             'Inputs': [],
             'Output': 0,
         }
+        self.activationFunc = ['sigmoid', 'relu', 'tanh', 'leakyRelu', 'linear']
 
     def __str__(self):
         return '<%s>' % self.neuron
@@ -89,7 +90,7 @@ class NeuralNetwork:
         self.Neuron = Neuron()
 
         self.Network = []
-        self.activationFunc = ['sigmoid', 'relu', 'tanh', 'leakyRelu', 'linear']
+        #self.activationFunc = ['sigmoid', 'relu', 'tanh', 'leakyRelu', 'linear']
         self.NeuralNet = {
             'Network': [],
             'Output': 0,
@@ -107,7 +108,7 @@ class NeuralNetwork:
         for outs in range(0, self.numOutputs):
             neuron = self.Neuron.neuron
             neuron['Layer'] = 0
-            neuron['Activation'] = choice(self.activationFunc)
+            neuron['Activation'] = choice(self.Neuron.activationFunc)
             neuron['ID'] = outs
             neuron['NodeNum'] = outs
             neuron['Weights'] = [random() for inputs in range(0, self.numInputs)]
@@ -214,7 +215,7 @@ class NeuralNetwork:
     def DrawGraph(self, graphWindow, tileSize=64, offset=0):
         inputOffset = (self.NeuralNet['MaxNodes'] - self.numInputs) / 2
         for inputs in range(0, self.numInputs):
-            NeatRender.Inputs(graphWindow, 0, inputs, tileSize, offset, inputOffset)
+            TweannRender.Inputs(graphWindow, 0, inputs, tileSize, offset, inputOffset)
 
         for node in self.Network:
 
@@ -226,12 +227,12 @@ class NeuralNetwork:
             elements = self.NeuralNet['Species'][node['Layer']]
             nodeOffset = (self.NeuralNet['MaxNodes'] - elements) / 2
 
-            NeatRender.Perceptron(graphWindow, nodeXpos,
-                                  node['NodeNum'], node['Enabled'], node['Activation'], node['Recurrent'],
-                                  tileSize, offset, nodeOffset)
+            TweannRender.Perceptron(graphWindow, nodeXpos,
+                                    node['NodeNum'], node['Enabled'], node['Activation'], node['Recurrent'],
+                                    tileSize, offset, nodeOffset)
 
     def InternalDrawGraph(self):
-        graphWindow = NeatRender.GraphWindow()
+        graphWindow = TweannRender.GraphWindow()
         self.DrawGraph(graphWindow, tileSize=64, offset=4)
         while True:
             graphWindow.draw()
