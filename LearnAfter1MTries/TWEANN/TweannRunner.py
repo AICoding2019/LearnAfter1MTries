@@ -5,7 +5,7 @@ from random import random
 from random import choice
 
 
-class Neat:
+class Tweann:
     def __init__(self, numInputs, numOutputs,
                  PopSize=100, CrossOverRate=0.7, MutationRate=0.001, ChromoLength=70, GeneLength=2,
                  selectionType='weightedRouletteWheel', crossOverType='randomSwapPoint', mutateType='Binary',
@@ -29,6 +29,7 @@ class Neat:
         self.infoBoard = infoBoard
         self.progressGen = progressGen
         self.progressOverall = progressOverall
+        self.AddNodeMutationRate = 0.001
 
         self.GA = []
         self.NeatListGenomes = []
@@ -92,10 +93,12 @@ class Neat:
         for dadNeuron in dad:
             if dadNeuron['NodeNum'] > maxMumNodeNum:
                 neuron = self.Mutate(dadNeuron)
-                self.AddNodeOrNot(neuron, baby1.NeuralNet['Network'])
+                self.AddNodeOrNot(neuron, baby2.NeuralNet['Network'])
 
-        baby1 = self.MutateByAddingNode(baby1, baby1layers, baby1MaxNum)
-        baby2 = self.MutateByAddingNode(baby2, baby2layers, baby2MaxNum)
+        if random() < self.AddNodeMutationRate:
+            self.MutateByAddingNode(baby1.NeuralNet)
+        if random() < self.AddNodeMutationRate:
+            self.MutateByAddingNode(baby2.NeuralNet)
 
         return baby1, baby2
 
@@ -111,27 +114,41 @@ class Neat:
             network.AddNeuron(neuron)
 
     @staticmethod
-    def MutateByAddingNode(baby, babyLayers, babyMaxNum):
-        addNeuron = Neuron()
-        addNeuron.neuron['ID'] = [],
-        addNeuron.neuron['Weights'] = random(),
-        addNeuron.neuron['Bias'] = random(),
-        addNeuron.neuron['Enabled'] = 1,
-        addNeuron.neuron['Recurrent'] = choice([0, 1]),
-        addNeuron.neuron['RecurrentWeight'] = random(),
-        addNeuron.neuron['Layer'] = random.randrange(babyLayers+2),
-        addNeuron.neuron['Activation'] = choice(addNeuron.activationFunc),
-        addNeuron.neuron['NodeNum'] = 0,
-        addNeuron.neuron['Inputs'] = [],
-        addNeuron.neuron['Output'] = 0,
-        baby.AddNeuron(addNeuron)
+    def MutateByAddingNode(NN):
+        layerToAddNeuron = random.randrange(NN.NeuralNet['Layers'] + 1)
 
-        return baby
+        maxNodesInLayer = -1
+        maxNodes = 0
+
+        for neuron in NN:
+            if maxNodes < neuron['NodeNum']:
+                maxNodes = neuron['NodeNum']
+            if neuron['Layer'] == layerToAddNeuron:
+                if maxNodesInLayer < neuron['NodeNum']:
+                    maxNodesInLayer = neuron['NodeNum']
+
+        addNeuron = Neuron()
+        addNeuron.neuron['ID'] = []
+        addNeuron.neuron['Weights'] = random()
+        addNeuron.neuron['Bias'] = random()
+        addNeuron.neuron['Enabled'] = 1
+        addNeuron.neuron['Recurrent'] = choice([0, 1])
+        addNeuron.neuron['RecurrentWeight'] = random()
+        addNeuron.neuron['Layer'] = layerToAddNeuron
+        addNeuron.neuron['Activation'] = choice(addNeuron.activationFunc)
+        addNeuron.neuron['Inputs'] = []
+        addNeuron.neuron['NodeNum'] = maxNodesInLayer + 1
+        addNeuron.neuron['Output'] = 0
+        addNeuron.neuron['ID'] = maxNodes + 1
+
+        NN.AddNeuron(addNeuron)
+        NN.NeuralNet['Species'] = [maxNodes + 1, NN.NeuralNet['Layers']]  # [ num hiddenlayers, layers]
+        NN.NeuralNet['MaxNodes'] = maxNodes + 1
 
 
 if __name__ == '__main__':
-    print("NeatRunner")
-    test = Neat(numInputs=2, numOutputs=1, PopSize=2)
+    print("TweannRunner")
+    test = Tweann(numInputs=2, numOutputs=1, PopSize=2)
     test.CreatePopulation()
 
     # Solving XOR

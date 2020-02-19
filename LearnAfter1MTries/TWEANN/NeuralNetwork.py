@@ -90,7 +90,6 @@ class NeuralNetwork:
         self.Neuron = Neuron()
 
         self.Network = []
-        #self.activationFunc = ['sigmoid', 'relu', 'tanh', 'leakyRelu', 'linear']
         self.NeuralNet = {
             'Network': [],
             'Output': 0,
@@ -166,8 +165,6 @@ class NeuralNetwork:
         addedNeuron['ID'] = newNodeID + 1
 
         self.Network.append(addedNeuron)
-
-
 
     @staticmethod
     def UserDefineGraph(numInputs, HiddenLayers, numOutputs, activation='relu', recurrent=0):
