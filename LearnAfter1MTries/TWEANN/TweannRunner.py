@@ -63,6 +63,11 @@ class Tweann:
         baby1 = NeuralNetwork(self.numInputs, self.numOutputs)
         baby2 = NeuralNetwork(self.numInputs, self.numOutputs)
 
+        if mum['Fitness'] > dad['Fitness']:
+            fittest = 'mum'
+        else:
+            fittest = 'dad'
+
         for mumNeuron in mum:
             if mumNeuron['NodeNum'] > maxMumNodeNum:
                 maxMumNodeNum = mumNeuron['NodeNum']
@@ -73,7 +78,7 @@ class Tweann:
 
                 if mumNeuron['Layer'] == dadNeuron['Layer']:
                     if mumNeuron['NodeNum'] == dadNeuron['NodeNum']:
-                        baby1Neuron, baby2Neuron = self.CrossOver(mumNeuron, dadNeuron)
+                        baby1Neuron, baby2Neuron = self.CrossOver(mumNeuron, dadNeuron, fittest)
                         baby1Neuron = self.Mutate(baby1Neuron)
                         baby2Neuron = self.Mutate(baby2Neuron)
                         baby1.NeuralNet['Network'].append(baby1Neuron.copy())
@@ -103,10 +108,71 @@ class Tweann:
         return baby1, baby2
 
     def Mutate(self, neuron):
+
+        neuron['Weights'] = neuron['Weights'] + (-self.MutationRate + 2 * self.MutationRate * random())
+        neuron['Bias'] = neuron['Bias'] + (-self.MutationRate + 2 * self.MutationRate * random())
+        neuron['RecurrentWeight'] = neuron['RecurrentWeight'] + (-self.MutationRate + 2 * self.MutationRate * random())
+
+        if random < self.MutationRate:
+            neuron['Recurrent'] = choice([0, 1])
+
+        if random < self.MutationRate:
+            neuron['Activation'] = choice(neuron.Neuron.activationFunc)
+
+        if random < self.MutationRate:
+            neuron['Enabled'] = choice([0, 1])
+
         return neuron
 
-    def CrossOver(self, mumNeuron, dadNeuron):
-        return mumNeuron.copy(), dadNeuron.copy()
+    def CrossOverRealNumbers(self, mumGene, dadGene, fittest):
+        Max = max(mumGene, dadGene)
+        Min = min(mumGene, dadGene)
+
+        if fittest == 'mum':
+            baby1 = mumGene + self.CrossOverRate * (Max - Min) * random()
+            baby2 = mumGene + self.CrossOverRate * (Max - Min) * random()
+        else:
+
+            baby1 = dadGene + self.CrossOverRate * (Max - Min) * random()
+            baby2 = dadGene + self.CrossOverRate * (Max - Min) * random()
+
+        return baby1, baby2
+
+    def CrossOverOther(self, mumGene, dadGene, fittest):
+        if random() < self.CrossOverRate:
+            if fittest == 'mum':
+                baby1 = mumGene
+                baby2 = mumGene
+            else:
+                baby1 = dadGene
+                baby2 = dadGene
+        else:
+            baby1 = mumGene
+            baby2 = dadGene
+
+        return baby1, baby2
+
+    def CrossOver(self, mumNeuron, dadNeuron, fittest):
+        baby1 = Neuron()
+        baby2 = Neuron()
+
+        baby1.neuron['Weight'], baby2.neuron['Weight'] = self.CrossOverRealNumbers(mumNeuron['Weight'],
+                                                                                   dadNeuron['Weight'], fittest)
+        baby1.neuron['Bias'], baby2.neuron['Bias'] = self.CrossOverRealNumbers(mumNeuron['Bias'], dadNeuron['Bias'],
+                                                                               fittest)
+        baby1.neuron['RecurrentWeight'], baby2.neuron['RecurrentWeight'] = \
+            self.CrossOverRealNumbers(mumNeuron['RecurrentWeight'], dadNeuron['RecurrentWeight'], fittest)
+
+        baby1.neuron['Activation'], baby1.neuron['Activation'] = self.CrossOverOther(mumNeuron['Activation'],
+                                                                                     dadNeuron['Activation'], fittest)
+
+        baby1.neuron['Recurrent'], baby1.neuron['Recurrent'] = self.CrossOverOther(mumNeuron['Recurrent'],
+                                                                                   dadNeuron['Recurrent'], fittest)
+
+        baby1.neuron['Enabled'], baby1.neuron['Enabled'] = self.CrossOverOther(mumNeuron['Enabled'],
+                                                                               dadNeuron['Enabled'], fittest)
+
+        return baby1, baby2
 
     @staticmethod
     def AddNodeOrNot(neuron, network):

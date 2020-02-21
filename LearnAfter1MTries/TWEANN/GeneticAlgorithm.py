@@ -153,7 +153,7 @@ def CrossOverRandomSwapPoint(mum, dad, crossOverRate, chromoLength):
     return baby1, baby2
 
 
-def CrossOverRealNumber(mum, dad, crossOverRate, chromoLength):
+def CrossOver(mum, dad, crossOverRate, chromoLength):
     baby1 = mum.copy()
     baby2 = dad.copy()
     return baby1, baby2
@@ -374,7 +374,7 @@ class GA:
 
     def Statistics(self):
         dataMean = np.mean(self.data)
-        dataStmumd = np.std(self.data)
+        dataStd = np.std(self.data)
         bins = np.array(range(0, 100)) / 100  # np.array(range(0, len(self.data))) / len(self.data)
         self.x.append(self.Generation - 1)
 
