@@ -17,28 +17,28 @@ def BinToInt(binary):
     return val
 
 
-def MutateRealNumber(chromo, mutationRate):
-    mutation = chromo.copy
-    randomIndex = rd.randrange(len(chromo))
-    if random() < mutationRate:
-        mutation[randomIndex] += random.choice[-1, 1] * mutation[randomIndex] * 0.001  # mutation is +/- 0.1%
+def PerturbRealNumber(realNumber, perturbationRate):
+    if random() < perturbationRate:
+        perturbation = realNumber + (-perturbationRate + 2 * perturbationRate * random())
+    else:
+        perturbation = realNumber
 
-    return mutation
+    return perturbation
 
 
-def MutateBitFlip(chromo, mutationRate):
-    mutation = chromo.copy()
-    randomIndex = rd.randrange(len(chromo))
-    if random() < mutationRate:
-        if mutation['chromo'][randomIndex] == 1:
-            mutation['chromo'][randomIndex] = 0
+def FlipBoolean(boolean, FlipRate):
+    if random() < FlipRate:
+        if boolean == 1:
+            flip = 0
         else:
-            mutation['chromo'][randomIndex] = 1
+            flip = 1
+    else:
+        flip = boolean
 
-    return mutation
+    return flip
 
 
-def MutateRandomResetting(chromo, mutationRate, chromoRange):
+def MutateChromeRandomResetting(chromo, mutationRate, chromoRange):
     """"""
     '''https: // www.geeksforgeeks.org / mutation - algorithms -
     ''for -string - manipulation - ga /
@@ -48,18 +48,6 @@ def MutateRandomResetting(chromo, mutationRate, chromoRange):
 
     if random() < mutationRate:
         mutation[randomIndex] = random.choice(chromoRange)
-
-    return mutation
-
-
-def MutateSwap(chromo, mutationRate):
-    mutation = chromo.copy()
-    randomIndex1 = rd.randrange(len(chromo))
-    randomIndex2 = rd.randrange(len(chromo))
-
-    if random() < mutationRate:
-        mutation['chromo'][randomIndex1], mutation['chromo'][randomIndex2] = \
-            mutation['chromo'][randomIndex2], mutation['chromo'][randomIndex1]
 
     return mutation
 
@@ -129,7 +117,7 @@ def CrossOverMaximalPositionBased(mum, dad, crossOverRate, chromoLength):
     return baby1, baby2
 
 
-def CrossOverRandomSwapPoint(mum, dad, crossOverRate, chromoLength):
+def CrossOverRandomSwapPoint(mum, dad, chromoLength, crossOverRate):
     baby1 = mum.copy()
     baby2 = dad.copy()
 
@@ -153,12 +141,6 @@ def CrossOverRandomSwapPoint(mum, dad, crossOverRate, chromoLength):
     return baby1, baby2
 
 
-def CrossOver(mum, dad, crossOverRate, chromoLength):
-    baby1 = mum.copy()
-    baby2 = dad.copy()
-    return baby1, baby2
-
-
 def DecodeRealNumber(chromo, DecodeDict):
     decoded = [DecodeDict[gene] for gene in chromo]
     return decoded
@@ -178,8 +160,8 @@ def DecodeBinary(chromo, geneLength, DecodeDict):
 class GA:
     def __init__(self, PopSize=100, CrossOverRate=0.7, MutationRate=0.001, ChromoLength=70, GeneLength=2,
                  selectionType='weightedRouletteWheel', crossOverType='randomSwapPoint', mutateType='Binary',
-                 chromoType='Binary',
-                 stringMutate='swap', DecodeDict=[], numGeneration=100, fitnessTest=[],
+                 chromoType='Binary', genomeKey='chromo', mutationCustomFunction=[], setPopFlag=False,
+                 stringMutate='swap', DecodeDict=[], numGeneration=100, fitnessTestFunction=[],
                  infoBoard=[], progressGen=[], progressOverall=[]):
 
         self.ListGenomes = []
@@ -200,12 +182,18 @@ class GA:
         self.chromoType = chromoType
         self.stringMutate = stringMutate
         self.DecodeDict = DecodeDict
+        self.genomeKey = genomeKey
+        self.MutationCustomFunction = mutationCustomFunction
+        self.ExternalGenPopulationFlag = setPopFlag
         self.Busy = True
 
-        self.FittestGenome = []
-        self.FittestGenomeEver = []
+        self.FittestGenome = {'chromo': [],
+                              'Fitness': 0,
+                              'Info': []
+                              }
+        self.FittestGenomeEver = self.FittestGenome.copy()
         self.numGeneration = numGeneration
-        self.fitnessTest = fitnessTest
+        self.fitnessTestFunction = fitnessTestFunction
         self.infoBoard = infoBoard
         self.progressGen = progressGen
         self.progressOverall = progressOverall
@@ -216,53 +204,93 @@ class GA:
         self.plots = 0
 
     def CreateStartPopulation(self):
-        if self.chromoType == 'Binary':
-            for genome in range(0, self.PopSize):
-                Genomes = {'chromo': [randint(0, 1) for bit in range(0, self.ChromoLength)],
-                           'Fitness': 0,
-                           'Info': []
-                           }
-                self.ListGenomes.append(Genomes)
 
-            self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
-                                      'Fitness': 0,
-                                      'Info': []
-                                      }
-        if self.chromoType == 'RealNumberInt':
-            for genome in range(0, self.PopSize):
-                Genomes = {'chromo': [randint(0, max(self.DecodeDict.keys())) for bit in range(0, self.ChromoLength)],
-                           'Fitness': 0,
-                           'Info': []
-                           }
-                self.ListGenomes.append(Genomes)
+        if not self.ExternalGenPopulationFlag:
+            if self.chromoType == 'Binary':
+                for genome in range(0, self.PopSize):
+                    Genomes = {'chromo': [randint(0, 1) for bit in range(0, self.ChromoLength)],
+                               'Fitness': 0,
+                               'Info': []
+                               }
+                    self.ListGenomes.append(Genomes)
 
-            self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
-                                      'Fitness': 0,
-                                      'Info': []
-                                      }
+                self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
+                                          'Fitness': 0,
+                                          'Info': []
+                                          }
+            if self.chromoType == 'RealNumberInt':
+                for genome in range(0, self.PopSize):
+                    Genomes = {
+                        'chromo': [randint(0, max(self.DecodeDict.keys())) for bit in range(0, self.ChromoLength)],
+                        'Fitness': 0,
+                        'Info': []
+                        }
+                    self.ListGenomes.append(Genomes)
+
+                self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
+                                          'Fitness': 0,
+                                          'Info': []
+                                          }
+
         self.FittestGenome = self.FittestGenomeEver.copy()
         self.BestFitnessScore = 0
         self.TotalFitnessScore = 0
         self.Generation = 0
 
+    def setStartPopulation(self, population):
+        self.ListGenomes = population
+
+    def MutateChromeRealNumber(self, chromo):
+        mutation = chromo.copy
+        randomIndex = rd.randrange(len(chromo))
+        mutation['chromo'][randomIndex] = PerturbRealNumber(mutation['chromo'][randomIndex], self.MutationRate)
+        return mutation
+
+    def MutateChromeBitFlip(self, chromo):
+        mutation = chromo.copy()
+        randomIndex = rd.randrange(len(chromo))
+        mutation['chromo'][randomIndex] = FlipBoolean(mutation['chromo'][randomIndex], self.MutationRate)
+
+        return mutation
+
+    def MutateChromeSwap(self, chromo):
+        mutation = chromo.copy()
+        randomIndex1 = rd.randrange(len(chromo))
+        randomIndex2 = rd.randrange(len(chromo))
+
+        if random() < self.MutationRate:
+            mutation['chromo'][randomIndex1], mutation['chromo'][randomIndex2] = \
+                mutation['chromo'][randomIndex2], mutation['chromo'][randomIndex1]
+
+        return mutation
+
     def Mutate(self, chromo):
 
+        if self.mutateType == 'Integer':
+            return self.MutateChromeSwap(chromo)
+
         if self.mutateType == 'RealNumber':
-            return MutateSwap(chromo, self.MutationRate)
+            return self.MutateChromeRealNumber(chromo)
 
         if self.mutateType == 'Binary':
-            return MutateBitFlip(chromo, self.MutationRate)
+            return self.MutateChromeBitFlip(chromo)
 
         if self.mutateType == 'String':
             if self.stringMutate == 'swap':
-                return MutateSwap(chromo, self.MutationRate)
+                return self.MutateChromeSwap(chromo)
 
-    def CrossOver(self, mum, dad):
+    def CrossOver(self, mumForCrossOver, dadForCrossOver):
+
         if self.crossOverType == 'randomSwapPoint':
-            return CrossOverRandomSwapPoint(mum, dad, self.CrossOverRate, self.ChromoLength)
+            return CrossOverRandomSwapPoint(mumForCrossOver, dadForCrossOver, self.ChromoLength,
+                                            crossOverRate=self.CrossOverRate)
 
         if self.crossOverType == 'partiallyMapped':
-            return CrossOverPartiallyMapped(mum, dad, self.ChromoLength, crossOverRate=self.CrossOverRate)
+            return CrossOverPartiallyMapped(mumForCrossOver, dadForCrossOver, self.ChromoLength,
+                                            crossOverRate=self.CrossOverRate)
+
+    def CrossOverTeann(self,mumForCrossOver, dadForCrossOver):
+        layersToCheck = min(mumForCrossOver['layer'],dadForCrossOver['layer'])
 
     def Selection(self):
         if self.selectionType == 'rouletteWheel':
@@ -300,14 +328,14 @@ class GA:
         selectedGenome = self.ListGenomes[selected]
         return selectedGenome
 
-    def UpdateFitnessScores(self, fitnessTest):
+    def UpdateFitnessScores(self, fitnessTestFunction, genomeKey):
         self.BestFitnessScore = 0
         self.TotalFitnessScore = 0
         # print(f'Update :{self.ListGenomes}')
         for genome in self.ListGenomes:
-            decode = self.Decode(genome['chromo'])
+            decode = self.Decode(genome[genomeKey])
 
-            genome['Fitness'], genome['Info'] = fitnessTest(decode)
+            genome['Fitness'], genome['Info'] = fitnessTestFunction(decode)
             # print( f"Update:   {genome['Fitness']} {genome['Info']}")
             self.TotalFitnessScore += genome['Fitness']
             self.data.append(genome['Fitness'])
@@ -328,11 +356,20 @@ class GA:
         ListBabyGenomes = []
 
         while NewBabies < self.PopSize:
-            mum = self.Selection()
-            dad = self.Selection()
-            baby1, baby2 = self.CrossOver(mum, dad)
-            baby1 = self.Mutate(baby1)
-            baby2 = self.Mutate(baby2)
+            mumSelected = self.Selection()
+            dadSelected = self.Selection()
+
+            if not self.CrossOverCustomFunction:
+                baby1, baby2 = self.CrossOver(mumSelected, dadSelected)
+            else:
+                baby1, baby2 = self.CrossOverCustomFunction(mumSelected, dadSelected)
+
+            if not self.MutationCustomFunction:
+                baby1 = self.Mutate(baby1)
+                baby2 = self.Mutate(baby2)
+            else:
+                baby1 = self.MutationCustomFunction(baby1)
+                baby2 = self.MutationCustomFunction(baby2)
 
             ListBabyGenomes.append(baby1)
             ListBabyGenomes.append(baby2)
@@ -352,10 +389,13 @@ class GA:
         if self.chromoType == 'String':
             return DecodeString(chromo, self.DecodeDict)
 
-    def Epoch(self, fitnessTest):
+        if self.chromoType == 'Output':
+            return chromo
+
+    def Epoch(self):
 
         while self.Generation != self.numGeneration:
-            self.UpdateFitnessScores(fitnessTest)
+            self.UpdateFitnessScores(self.fitnessTestFunction, self.genomeKey)
             self.GenerateBabies()
             self.Generation += 1
 
@@ -367,7 +407,7 @@ class GA:
 
     def Evolve(self):
         self.CreateStartPopulation()
-        self.Epoch(self.fitnessTest)
+        self.Epoch()
 
     def Log(self):
         pass

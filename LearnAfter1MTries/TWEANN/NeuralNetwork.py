@@ -150,6 +150,13 @@ class NeuralNetwork:
                         nextLayerInput = nextnextLayerInput.copy()
                         nextnextLayerInput = []
 
+    def FindNeuronsInLayer(self,layer):
+        neuronInLayer = []
+        for neuron in self.NeuralNet['Network']:
+            if neuron == layer:
+                neuronInLayer.append(neuron)
+        return neuronInLayer
+
     def AddNeuron(self, newNeuron):
         addedNeuron = newNeuron.copy()
         newNodeNum = -1
@@ -193,7 +200,7 @@ class NeuralNetwork:
             neuron['ID'] = ID
             neuron['Weights'] = [random() for inputs in range(0, nodes)]
             neuron['Bias'] = random()
-            neuron['Activation'] = activation
+            neuron['Activati   on'] = activation
             neuron['Recurrent'] = recurrent
             neuron['RecurrentWeight'] = random()
             neuron['Enabled'] = 1

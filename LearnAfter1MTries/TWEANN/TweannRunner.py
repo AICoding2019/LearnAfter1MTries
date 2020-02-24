@@ -56,6 +56,8 @@ class Tweann:
                      progressGen=self.progressGen,
                      progressOverall=self.progressOverall)
 
+        self.GA.setStartPopulation(self.NeatListGenomes)
+
     def GenerateBabies(self, mum, dad):
         maxMumNodeNum = -1
         maxDadNodeNum = -1
@@ -227,10 +229,20 @@ if __name__ == '__main__':
 
     def TestFitness(NN, X, y):
         totalError = 0
+        numberCorrect = 0
         for index in range(0, len(X)):
             NN.UpdateGraph(X[index])
             totalError += math.fabs(y[index] - NN.NeuralNet['Output'])
+            if NN.NeuralNet['Output'] < 0.5:
+                predict =0
+            else:
+                predict =1
+
+            if y[index] == predict:
+                numberCorrect += 1
         NN.NeuralNet['Fitness'] = 1 / (1 + totalError)
+
+        return NN.NeuralNet['Fitness'], numberCorrect
 
 
     print(test.NeatListGenomes[0])
