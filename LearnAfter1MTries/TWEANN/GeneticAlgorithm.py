@@ -160,8 +160,8 @@ def DecodeBinary(chromo, geneLength, DecodeDict):
 class GA:
     def __init__(self, PopSize=100, CrossOverRate=0.7, MutationRate=0.001, ChromoLength=70, GeneLength=2,
                  selectionType='weightedRouletteWheel', crossOverType='randomSwapPoint', mutateType='Binary',
-                 chromoType='Binary', genomeKey='chromo', mutationCustomFunction=[], setPopFlag=False,
-                 stringMutate='swap', DecodeDict=[], numGeneration=100, fitnessTestFunction=[],
+                 chromoType='Binary', genomeKey='chromo', mutationCustomFunction=[], crossOverCustomFunction=[],
+                 setPopFlag=False, stringMutate='swap', DecodeDict=[], numGeneration=100, fitnessTestFunction=[],
                  infoBoard=[], progressGen=[], progressOverall=[]):
 
         self.ListGenomes = []
@@ -184,6 +184,7 @@ class GA:
         self.DecodeDict = DecodeDict
         self.genomeKey = genomeKey
         self.MutationCustomFunction = mutationCustomFunction
+        self.CrossOverCustomFunction = crossOverCustomFunction
         self.ExternalGenPopulationFlag = setPopFlag
         self.Busy = True
 
@@ -224,7 +225,7 @@ class GA:
                         'chromo': [randint(0, max(self.DecodeDict.keys())) for bit in range(0, self.ChromoLength)],
                         'Fitness': 0,
                         'Info': []
-                        }
+                    }
                     self.ListGenomes.append(Genomes)
 
                 self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
@@ -288,9 +289,6 @@ class GA:
         if self.crossOverType == 'partiallyMapped':
             return CrossOverPartiallyMapped(mumForCrossOver, dadForCrossOver, self.ChromoLength,
                                             crossOverRate=self.CrossOverRate)
-
-    def CrossOverTeann(self,mumForCrossOver, dadForCrossOver):
-        layersToCheck = min(mumForCrossOver['layer'],dadForCrossOver['layer'])
 
     def Selection(self):
         if self.selectionType == 'rouletteWheel':

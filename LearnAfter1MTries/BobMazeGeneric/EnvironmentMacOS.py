@@ -253,10 +253,10 @@ if __name__ == '__main__':
     #           progressOverall=testEnviron.EndPointDraw)
 
     test = GA(PopSize=100, numGeneration=100, CrossOverRate=0.7, MutationRate=0.001, ChromoLength=64, GeneLength=2,
-              crossOverType='partiallyMapped', mutateType='RealNumber',
+              crossOverType='partiallyMapped', mutateType='Integer',
               chromoType='RealNumberInt',
               DecodeDict=decodeDict,
-              fitnessTest=testEnviron.TestRoute,
+              fitnessTestFunction=testEnviron.TestRoute,
               selectionType='rouletteWheel',
               infoBoard=testEnviron.infoBoard,
               progressGen=testEnviron.EndPointDraw,
