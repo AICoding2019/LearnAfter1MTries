@@ -6,32 +6,34 @@ from random import choice
 
 
 class Tweann:
-    def __init__(self, numInputs, numOutputs,
-                 PopSize=100, CrossOverRate=0.7, MutationRate=0.001, ChromoLength=70, GeneLength=2,
-                 selectionType='weightedRouletteWheel', crossOverType='randomSwapPoint', mutateType='Binary',
-                 chromoType='Binary',
-                 stringMutate='swap', DecodeDict=[], numGeneration=100, fitnessTest=[],
-                 infoBoard=[], progressGen=[], progressOverall=[]):
+    def __init__(self, numInputs, numOutputs,PopSize=100, CrossOverRate=0.7, MutationRate=0.001,
+                 addNodeMutationRate = 0.001,selectionType='weightedRouletteWheel', DecodeDict=[],
+                 numGeneration=100, fitnessTestFunction=[]):
         self.numInputs = numInputs
         self.numOutputs = numOutputs
         self.PopSize = PopSize
         self.CrossOverRate = CrossOverRate
         self.MutationRate = MutationRate
-        self.GeneLength = GeneLength
         self.selectionType = selectionType
-        self.crossOverType = crossOverType
-        self.mutateType = mutateType
-        self.chromoType = chromoType
-        self.stringMutate = stringMutate
         self.DecodeDict = DecodeDict
         self.numGeneration = numGeneration
-        self.fitnessTest = fitnessTest
-        self.infoBoard = infoBoard
-        self.progressGen = progressGen
-        self.progressOverall = progressOverall
-        self.AddNodeMutationRate = 0.001
+        self.fitnessTest = fitnessTestFunction
+        self.AddNodeMutationRate = addNodeMutationRate
 
-        self.GA = []
+        self.GA = GA(PopSize=self.PopSize,
+                     CrossOverRate=self.CrossOverRate,
+                     MutationRate=self.MutationRate,
+                     selectionType=self.selectionType,
+                     DecodeDict=self.DecodeDict,
+                     numGeneration=self.numGeneration,
+                     fitnessTestFunction=self.fitnessTest,
+                     genomeKey='Network',
+                     chromoType='Network',
+                     mutationCustomFunction=self.Mutate,
+                     crossOverCustomFunction=self.CrossOver,
+                     setPopFlag=True,
+                     stringMutate='swap',
+                     )
         self.NeatListGenomes = []
 
     def CreatePopulation(self):
@@ -39,22 +41,6 @@ class Tweann:
             net = NeuralNetwork(self.numInputs, self.numOutputs)
             net.CreateInitialGraph()
             self.NeatListGenomes.append(net)
-
-        self.GA = GA(PopSize=self.PopSize,
-                     CrossOverRate=self.CrossOverRate,
-                     MutationRate=self.MutationRate,
-                     ChromoLength=self.MutationRate,
-                     GeneLength=self.GeneLength,
-                     selectionType=self.selectionType,
-                     crossOverType=self.crossOverType, mutateType=self.mutateType,
-                     chromoType=self.chromoType,
-                     stringMutate=self.stringMutate,
-                     DecodeDict=self.DecodeDict,
-                     numGeneration=self.numGeneration,
-                     fitnessTest=self.fitnessTest,
-                     infoBoard=self.infoBoard,
-                     progressGen=self.progressGen,
-                     progressOverall=self.progressOverall)
 
         self.GA.setStartPopulation(self.NeatListGenomes)
 
@@ -176,6 +162,13 @@ class Tweann:
 
         return baby1, baby2
 
+    def Epoch(self):
+        self.GA.Epoch()
+
+    def Evolve(self):
+        self.CreatePopulation()
+        self.Epoch()
+
     @staticmethod
     def AddNodeOrNot(neuron, network):
         if random() < 0.5:
@@ -216,51 +209,32 @@ class Tweann:
 
 if __name__ == '__main__':
     print("TweannRunner")
-    test = Tweann(numInputs=2, numOutputs=1, PopSize=2)
-    test.CreatePopulation()
-
-    # Solving XOR
-    X = [[0, 0],
-         [0, 1],
-         [1, 0],
-         [1, 1]]
-    y = [0, 1, 1, 0]
 
 
-    def TestFitness(NN, X, y):
+    def TestFitness(NN):
+        # Solving XOR
+        X = [[0, 0],
+             [0, 1],
+             [1, 0],
+             [1, 1]]
+        y = [0, 1, 1, 0]
         totalError = 0
         numberCorrect = 0
         for index in range(0, len(X)):
             NN.UpdateGraph(X[index])
             totalError += math.fabs(y[index] - NN.NeuralNet['Output'])
             if NN.NeuralNet['Output'] < 0.5:
-                predict =0
+                predict = 0
             else:
-                predict =1
+                predict = 1
 
             if y[index] == predict:
                 numberCorrect += 1
-        NN.NeuralNet['Fitness'] = 1 / (1 + totalError)
+        fitness =  1 / (1 + totalError)
+        NN.NeuralNet['Fitness'] = fitness
 
-        return NN.NeuralNet['Fitness'], numberCorrect
+        return fitness, numberCorrect
 
 
-    print(test.NeatListGenomes[0])
-    print(test.NeatListGenomes[1])
-
-    print("--Test Fitness----")
-    print(TestFitness(test.NeatListGenomes[0], X, y))
-    print(TestFitness(test.NeatListGenomes[1], X, y))
-    print('---Update Fitness---')
-    print(test.NeatListGenomes[0].NeuralNet['Fitness'])
-    print(test.NeatListGenomes[1].NeuralNet['Fitness'])
-
-    test.GenerateBabies(test.NeatListGenomes[0].NeuralNet['Network'], test.NeatListGenomes[0].NeuralNet['Network'])
-
-    addedNeuron = test.NeatListGenomes[0].NeuralNet['Network'][0]
-    print(addedNeuron)
-
-    test.NeatListGenomes[0].AddNeuron(addedNeuron)
-    print(test.NeatListGenomes[0])
-
-    test.GenerateBabies(test.NeatListGenomes[0].NeuralNet['Network'], test.NeatListGenomes[1].NeuralNet['Network'])
+    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=2,fitnessTestFunction=TestFitness)
+    testXOR.Evolve()

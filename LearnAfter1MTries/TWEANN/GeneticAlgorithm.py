@@ -4,6 +4,7 @@ from random import randint
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import copy
 
 
 def BinToInt(binary):
@@ -317,7 +318,10 @@ class GA:
         RouletteWheel = []
 
         for index, genome in enumerate(self.ListGenomes):
-            Slice = math.ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
+            if self.genomeKey == 'Network':
+                Slice = math.ceil((genome.NeuralNet['Fitness'] * 100) / self.TotalFitnessScore)
+            else:
+                Slice = math.ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
 
             for i in range(0, Slice):
                 RouletteWheel.append(index)
@@ -331,23 +335,41 @@ class GA:
         self.TotalFitnessScore = 0
         # print(f'Update :{self.ListGenomes}')
         for genome in self.ListGenomes:
-            decode = self.Decode(genome[genomeKey])
+            if genomeKey == 'Network':
+                decode = self.Decode(genome)
+            else:
+                decode = self.Decode(genome[genomeKey])
 
-            genome['Fitness'], genome['Info'] = fitnessTestFunction(decode)
+            fitness, info = fitnessTestFunction(decode)
+            #genome.NeuralNet['Fitness'], genome.NeuralNet['Info'] = fitnessTestFunction(decode)
             # print( f"Update:   {genome['Fitness']} {genome['Info']}")
-            self.TotalFitnessScore += genome['Fitness']
-            self.data.append(genome['Fitness'])
+            self.TotalFitnessScore += fitness
+            self.data.append(fitness)
 
-            if genome['Fitness'] > self.BestFitnessScore:
-                self.BestFitnessScore = genome['Fitness']
-                self.FittestGenome = genome.copy()
+            if fitness > self.BestFitnessScore:
+                self.BestFitnessScore = fitness
+                self.FittestGenome = copy.deepcopy(genome)
 
-                if genome['Fitness'] == 1:
+                if fitness == 1:
                     self.Busy = False
 
-            if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
-                self.FittestGenomeEver = self.FittestGenome.copy()
+            if genomeKey == 'Network':
+                genome.NeuralNet['Fitness'] = fitness
+                genome.NeuralNet['Info'] = info
+
+               # if self.FittestGenome.NeuralNet['Fitness'] > self.FittestGenomeEver.NeuralNet['Fitness']:
+               #     self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
+            else:
+                genome['Fitness'] = fitness
+                genome['Info'] = info
+
+                if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
+                    self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
         # print(f"----{self.FittestGenomeEver['Fitness']} {self.FittestGenomeEver['Info']}")
+
+    @staticmethod
+    def CalculateFitnessScore(fitnessTestFunction, decode):
+        return fitnessTestFunction(decode)
 
     def GenerateBabies(self):
         NewBabies = 0
@@ -387,7 +409,7 @@ class GA:
         if self.chromoType == 'String':
             return DecodeString(chromo, self.DecodeDict)
 
-        if self.chromoType == 'Output':
+        if self.chromoType == 'Network':
             return chromo
 
     def Epoch(self):
