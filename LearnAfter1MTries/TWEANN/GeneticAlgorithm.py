@@ -5,6 +5,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
+from LearnAfter1MTries.TWEANN.NeuralNetwork import *
 
 
 def BinToInt(binary):
@@ -281,6 +282,25 @@ class GA:
             if self.stringMutate == 'swap':
                 return self.MutateChromeSwap(chromo)
 
+    def CrossOverNeuralNetwork(self, mumNetwork, dadNetwork):
+        layerRange = min(mumNetwork.NeuralNet['Layers'], dadNetwork.NeuralNet['Layers'])
+        numInputs = mumNetwork.numInputs
+        numOutputs = mumNetwork.numInputs
+        baby1 = NeuralNetwork(numInputs, numOutputs)
+        baby2 = NeuralNetwork(numInputs, numOutputs)
+
+        baby1.NeuralNet['Layers']= layerRange
+        baby2.NeuralNet['Layers']= layerRange
+
+        for layer in range(layerRange):
+            mumForCrossOver = mumNetwork.FindNeuronsInLayer(layer)
+            dadForCrossOver = dadNetwork.FindNeuronsInLayer(layer)
+            baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
+            baby1.NeuralNet['Network'].append(baby1Layer)
+            baby2.NeuralNet['Network'].append(baby2Layer)
+
+        return baby1,baby2
+
     def CrossOver(self, mumForCrossOver, dadForCrossOver):
 
         if self.crossOverType == 'randomSwapPoint':
@@ -341,7 +361,7 @@ class GA:
                 decode = self.Decode(genome[genomeKey])
 
             fitness, info = fitnessTestFunction(decode)
-            #genome.NeuralNet['Fitness'], genome.NeuralNet['Info'] = fitnessTestFunction(decode)
+            # genome.NeuralNet['Fitness'], genome.NeuralNet['Info'] = fitnessTestFunction(decode)
             # print( f"Update:   {genome['Fitness']} {genome['Info']}")
             self.TotalFitnessScore += fitness
             self.data.append(fitness)
@@ -357,8 +377,8 @@ class GA:
                 genome.NeuralNet['Fitness'] = fitness
                 genome.NeuralNet['Info'] = info
 
-               # if self.FittestGenome.NeuralNet['Fitness'] > self.FittestGenomeEver.NeuralNet['Fitness']:
-               #     self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
+            # if self.FittestGenome.NeuralNet['Fitness'] > self.FittestGenomeEver.NeuralNet['Fitness']:
+            #     self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
             else:
                 genome['Fitness'] = fitness
                 genome['Info'] = info
@@ -382,7 +402,7 @@ class GA:
             if not self.CrossOverCustomFunction:
                 baby1, baby2 = self.CrossOver(mumSelected, dadSelected)
             else:
-                baby1, baby2 = self.CrossOverCustomFunction(mumSelected, dadSelected)
+                baby1, baby2 = self.CrossOverNeuralNetwork(mumSelected, dadSelected)
 
             if not self.MutationCustomFunction:
                 baby1 = self.Mutate(baby1)

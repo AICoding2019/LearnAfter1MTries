@@ -140,25 +140,24 @@ class Tweann:
 
         return baby1, baby2
 
-    def CrossOver(self, mumNeuron, dadNeuron, fittest):
+    def CrossOver(self, mumNeuron, dadNeuron):
         baby1 = Neuron()
         baby2 = Neuron()
 
         baby1.neuron['Weight'], baby2.neuron['Weight'] = self.CrossOverRealNumbers(mumNeuron['Weight'],
-                                                                                   dadNeuron['Weight'], fittest)
-        baby1.neuron['Bias'], baby2.neuron['Bias'] = self.CrossOverRealNumbers(mumNeuron['Bias'], dadNeuron['Bias'],
-                                                                               fittest)
+                                                                                   dadNeuron['Weight'])
+        baby1.neuron['Bias'], baby2.neuron['Bias'] = self.CrossOverRealNumbers(mumNeuron['Bias'], dadNeuron['Bias'])
         baby1.neuron['RecurrentWeight'], baby2.neuron['RecurrentWeight'] = \
-            self.CrossOverRealNumbers(mumNeuron['RecurrentWeight'], dadNeuron['RecurrentWeight'], fittest)
+            self.CrossOverRealNumbers(mumNeuron['RecurrentWeight'], dadNeuron['RecurrentWeight'])
 
         baby1.neuron['Activation'], baby1.neuron['Activation'] = self.CrossOverOther(mumNeuron['Activation'],
-                                                                                     dadNeuron['Activation'], fittest)
+                                                                                     dadNeuron['Activation'])
 
         baby1.neuron['Recurrent'], baby1.neuron['Recurrent'] = self.CrossOverOther(mumNeuron['Recurrent'],
-                                                                                   dadNeuron['Recurrent'], fittest)
+                                                                                   dadNeuron['Recurrent'])
 
         baby1.neuron['Enabled'], baby1.neuron['Enabled'] = self.CrossOverOther(mumNeuron['Enabled'],
-                                                                               dadNeuron['Enabled'], fittest)
+                                                                               dadNeuron['Enabled'])
 
         return baby1, baby2
 
