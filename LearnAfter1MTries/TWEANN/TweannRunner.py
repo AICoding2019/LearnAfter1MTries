@@ -3,12 +3,13 @@ from LearnAfter1MTries.TWEANN.NeuralNetwork import NeuralNetwork, Neuron
 from LearnAfter1MTries.TWEANN.GeneticAlgorithm import *
 from random import random
 from random import choice
+from random import randrange
 
 
 class Tweann:
-    def __init__(self, numInputs, numOutputs,PopSize=100, CrossOverRate=0.7, MutationRate=0.001,
-                 addNodeMutationRate = 0.001,selectionType='weightedRouletteWheel', DecodeDict=[],
-                 numGeneration=100, fitnessTestFunction=[]):
+    def __init__(self, numInputs, numOutputs, PopSize=100, CrossOverRate=0.7, MutationRate=0.001,
+                 addNodeMutationRate=0.001, selectionType='weightedRouletteWheel', DecodeDict=[],
+                 numGeneration=2, fitnessTestFunction=[]):
         self.numInputs = numInputs
         self.numOutputs = numOutputs
         self.PopSize = PopSize
@@ -33,6 +34,9 @@ class Tweann:
                      crossOverCustomFunction=self.CrossOver,
                      setPopFlag=True,
                      stringMutate='swap',
+                     progressGen=self.ProgressDisplayer,
+                     progressOverall=self.ProgressOverallDisplayer,
+                     infoBoard=self.InfoBoard
                      )
         self.NeatListGenomes = []
 
@@ -95,22 +99,27 @@ class Tweann:
 
         return baby1, baby2
 
-    def Mutate(self, neuron):
+    def Mutate(self, NN):
+        mutatedNN = copy.deepcopy(NN)
+        for neuron in mutatedNN.NeuralNet['Network']:
+            neuron['Weights'] = neuron['Weights'] + (-self.MutationRate + 2 * self.MutationRate * random())
+            neuron['Bias'] = neuron['Bias'] + (-self.MutationRate + 2 * self.MutationRate * random())
+            neuron['RecurrentWeight'] = neuron['RecurrentWeight'] + (
+                    -self.MutationRate + 2 * self.MutationRate * random())
 
-        neuron['Weights'] = neuron['Weights'] + (-self.MutationRate + 2 * self.MutationRate * random())
-        neuron['Bias'] = neuron['Bias'] + (-self.MutationRate + 2 * self.MutationRate * random())
-        neuron['RecurrentWeight'] = neuron['RecurrentWeight'] + (-self.MutationRate + 2 * self.MutationRate * random())
+            if random() < self.MutationRate:
+                neuron['Recurrent'] = choice([0, 1])
 
-        if random < self.MutationRate:
-            neuron['Recurrent'] = choice([0, 1])
+            if random() < self.MutationRate:
+                neuron['Activation'] = choice(neuron.Neuron.activationFunc)
 
-        if random < self.MutationRate:
-            neuron['Activation'] = choice(neuron.Neuron.activationFunc)
+            if random() < self.MutationRate:
+                neuron['Enabled'] = choice([0, 1])
 
-        if random < self.MutationRate:
-            neuron['Enabled'] = choice([0, 1])
+        if random() < self.MutationRate:
+            self.MutateByAddingNode(mutatedNN)
 
-        return neuron
+        return mutatedNN
 
     def CrossOverRealNumbers(self, mumGene, dadGene, fittest):
         Max = max(mumGene, dadGene)
@@ -161,6 +170,15 @@ class Tweann:
 
         return baby1, baby2
 
+    def ProgressDisplayer(self, info, fittestEver=True):
+        pass
+
+    def ProgressOverallDisplayer(self, info, fittestEver=True):
+        pass
+
+    def InfoBoard(self, text):
+        print(text)
+
     def Epoch(self):
         self.GA.Epoch()
 
@@ -175,7 +193,7 @@ class Tweann:
 
     @staticmethod
     def MutateByAddingNode(NN):
-        layerToAddNeuron = random.randrange(NN.NeuralNet['Layers'] + 1)
+        layerToAddNeuron = randrange(NN.NeuralNet['Layers'] + 1)
 
         maxNodesInLayer = -1
         maxNodes = 0
@@ -229,11 +247,14 @@ if __name__ == '__main__':
 
             if y[index] == predict:
                 numberCorrect += 1
-        fitness =  1 / (1 + totalError)
-        NN.NeuralNet['Fitness'] = fitness
+        fitness = 1 / (1 + totalError)
+        # NN.NeuralNet['Fitness'] = fitness
 
         return fitness, numberCorrect
 
 
-    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=2,fitnessTestFunction=TestFitness)
+    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=100, fitnessTestFunction=TestFitness)
     testXOR.Evolve()
+
+    while True:
+        pass

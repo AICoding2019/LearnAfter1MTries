@@ -241,7 +241,13 @@ class GA:
         self.Generation = 0
 
     def setStartPopulation(self, population):
-        self.ListGenomes = population
+        for chromo in population:
+            Genomes = {
+                'chromo': chromo,
+                'Fitness': 0,
+                'Info': []
+            }
+            self.ListGenomes.append(Genomes)
 
     def MutateChromeRealNumber(self, chromo):
         mutation = chromo.copy
@@ -282,24 +288,36 @@ class GA:
             if self.stringMutate == 'swap':
                 return self.MutateChromeSwap(chromo)
 
-    def CrossOverNeuralNetwork(self, mumNetwork, dadNetwork):
+    def CrossOverNeuralNetwork(self, mumChrome, dadChrome):
+        mumNetwork = mumChrome['chromo']
+        dadNetwork = dadChrome['chromo']
         layerRange = min(mumNetwork.NeuralNet['Layers'], dadNetwork.NeuralNet['Layers'])
         numInputs = mumNetwork.numInputs
         numOutputs = mumNetwork.numInputs
-        baby1 = NeuralNetwork(numInputs, numOutputs)
-        baby2 = NeuralNetwork(numInputs, numOutputs)
+        baby1Chromo = NeuralNetwork(numInputs, numOutputs)
+        baby2Chromo = NeuralNetwork(numInputs, numOutputs)
 
-        baby1.NeuralNet['Layers']= layerRange
-        baby2.NeuralNet['Layers']= layerRange
+        baby1Chromo.NeuralNet['Layers'] = layerRange
+        baby2Chromo.NeuralNet['Layers'] = layerRange
 
         for layer in range(layerRange):
             mumForCrossOver = mumNetwork.FindNeuronsInLayer(layer)
             dadForCrossOver = dadNetwork.FindNeuronsInLayer(layer)
             baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
-            baby1.NeuralNet['Network'].append(baby1Layer)
-            baby2.NeuralNet['Network'].append(baby2Layer)
+            baby1Chromo.NeuralNet['Network'].append(baby1Layer)
+            baby2Chromo.NeuralNet['Network'].append(baby2Layer)
 
-        return baby1,baby2
+        baby1 = {'chromo': baby1Chromo,
+                 'Fitness': 0,
+                 'Info': []
+                 }
+
+        baby2 = {'chromo': baby2Chromo,
+                 'Fitness': 0,
+                 'Info': []
+                 }
+
+        return baby1, baby2
 
     def CrossOver(self, mumForCrossOver, dadForCrossOver):
 
@@ -338,11 +356,12 @@ class GA:
         RouletteWheel = []
 
         for index, genome in enumerate(self.ListGenomes):
-            if self.genomeKey == 'Network':
-                Slice = math.ceil((genome.NeuralNet['Fitness'] * 100) / self.TotalFitnessScore)
-            else:
-                Slice = math.ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
+            # if self.genomeKey == 'Network':
+            #    Slice = math.ceil((genome.NeuralNet['Fitness'] * 100) / self.TotalFitnessScore)
+            # else:
+            #     Slice = math.ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
 
+            Slice = math.ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
             for i in range(0, Slice):
                 RouletteWheel.append(index)
 
@@ -355,16 +374,18 @@ class GA:
         self.TotalFitnessScore = 0
         # print(f'Update :{self.ListGenomes}')
         for genome in self.ListGenomes:
-            if genomeKey == 'Network':
-                decode = self.Decode(genome)
-            else:
-                decode = self.Decode(genome[genomeKey])
-
+            # if genomeKey == 'Network':
+            #   decode = self.Decode(genome)
+            # else:
+            #    decode = self.Decode(genome[genomeKey])
+            decode = self.Decode(genome)
             fitness, info = fitnessTestFunction(decode)
             # genome.NeuralNet['Fitness'], genome.NeuralNet['Info'] = fitnessTestFunction(decode)
             # print( f"Update:   {genome['Fitness']} {genome['Info']}")
             self.TotalFitnessScore += fitness
             self.data.append(fitness)
+            genome['Fitness'] = fitness
+            genome['Info'] = info
 
             if fitness > self.BestFitnessScore:
                 self.BestFitnessScore = fitness
@@ -373,18 +394,18 @@ class GA:
                 if fitness == 1:
                     self.Busy = False
 
-            if genomeKey == 'Network':
-                genome.NeuralNet['Fitness'] = fitness
-                genome.NeuralNet['Info'] = info
+            # if genomeKey == 'Network':
+            # genome.NeuralNet['Fitness'] = fitness
+            # genome.NeuralNet['Info'] = info
 
-            # if self.FittestGenome.NeuralNet['Fitness'] > self.FittestGenomeEver.NeuralNet['Fitness']:
-            #     self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
-            else:
-                genome['Fitness'] = fitness
-                genome['Info'] = info
+            if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
+                self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
+            # else:
+            #   genome['Fitness'] = fitness
+            #   genome['Info'] = info
 
-                if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
-                    self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
+            if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
+                self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
         # print(f"----{self.FittestGenomeEver['Fitness']} {self.FittestGenomeEver['Info']}")
 
     @staticmethod
@@ -408,8 +429,18 @@ class GA:
                 baby1 = self.Mutate(baby1)
                 baby2 = self.Mutate(baby2)
             else:
-                baby1 = self.MutationCustomFunction(baby1)
-                baby2 = self.MutationCustomFunction(baby2)
+                baby1Chromo = self.MutationCustomFunction(baby1['chromo'])
+                baby2Chromo = self.MutationCustomFunction(baby2['chromo'])
+
+                baby1 = {'chromo': baby1Chromo,
+                         'Fitness': 0,
+                         'Info': []
+                         }
+
+                baby2 = {'chromo': baby2Chromo,
+                         'Fitness': 0,
+                         'Info': []
+                         }
 
             ListBabyGenomes.append(baby1)
             ListBabyGenomes.append(baby2)
@@ -430,7 +461,7 @@ class GA:
             return DecodeString(chromo, self.DecodeDict)
 
         if self.chromoType == 'Network':
-            return chromo
+            return chromo['chromo']
 
     def Epoch(self):
 
@@ -498,13 +529,26 @@ class GA:
         self.data = []
 
     def InfoBoard(self):
-        self.progressGen(self.FittestGenome['Info'], fittestEver=False)
-        self.progressOverall(self.FittestGenomeEver['Info'], fittestEver=True)
+        # if self.chromoType == 'Network':
+        #     info = self.FittestGenome['Info']
+        #     info_Ever = self.FittestGenomeEver['Info']
+        #     fitness = self.FittestGenome['Fitness']
+        # else:
+        #     info = self.FittestGenome['Info']
+        #     info_Ever = self.FittestGenomeEver['Info']
+        #     fitness = self.FittestGenome['Fitness']
+
+        info = self.FittestGenome['Info']
+        info_Ever = self.FittestGenomeEver['Info']
+        fitness = self.FittestGenome['Fitness']
+
+        self.progressGen(info, fittestEver=False)
+        self.progressOverall(info_Ever, fittestEver=True)
         self.infoBoard(f"Gen= {self.Generation} "
-                       f"best score ={self.BestFitnessScore:.3f}={self.FittestGenome['Fitness']:.3f}"
+                       f"best score ={self.BestFitnessScore:.3f}={fitness:.3f}"
                        f" Total fitness={self.TotalFitnessScore:.3f}"
-                       f" fitness Info{self.FittestGenome['Info']}"
-                       f" fitness Ever Info{self.FittestGenomeEver['Info']}"
+                       f" fitness Info {info}"
+                       f" fitness Ever Info {info_Ever}"
                        )
 
 
