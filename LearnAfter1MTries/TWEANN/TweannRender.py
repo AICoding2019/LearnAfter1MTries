@@ -30,7 +30,7 @@ class GraphWindow:
         # self.screen.blit("NN", (10, 700))
         self.all_sprites.draw(self.screen)
         pg.display.flip()
-        self.clock.tick(1)
+        self.clock.tick(1000)
 
     def eventManager(self):
         for event in pg.event.get():

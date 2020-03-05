@@ -4,6 +4,7 @@ from LearnAfter1MTries.TWEANN.GeneticAlgorithm import *
 from random import random
 from random import choice
 from random import randrange
+import numpy as np
 
 
 class Tweann:
@@ -102,22 +103,26 @@ class Tweann:
     def Mutate(self, NN):
         mutatedNN = copy.deepcopy(NN)
         for neuron in mutatedNN.NeuralNet['Network']:
-            neuron['Weights'] = neuron['Weights'] + (-self.MutationRate + 2 * self.MutationRate * random())
-            neuron['Bias'] = neuron['Bias'] + (-self.MutationRate + 2 * self.MutationRate * random())
-            neuron['RecurrentWeight'] = neuron['RecurrentWeight'] + (
-                    -self.MutationRate + 2 * self.MutationRate * random())
+            neuron['Weights'] = (np.array(neuron['Weights']) +
+                                 (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
+            neuron['Bias'] = (np.array(neuron['Bias']) +
+                              (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
+            neuron['RecurrentWeight'] = (np.array(neuron['RecurrentWeight']) +
+                                         (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
 
             if random() < self.MutationRate:
                 neuron['Recurrent'] = choice([0, 1])
 
             if random() < self.MutationRate:
-                neuron['Activation'] = choice(neuron.Neuron.activationFunc)
+                neuron['Activation'] = choice(mutatedNN.Neuron.activationFunc)
 
             if random() < self.MutationRate:
                 neuron['Enabled'] = choice([0, 1])
 
         if random() < self.MutationRate:
+            print(f"Before added Node{mutatedNN.NeuralNet['Species']}")
             self.MutateByAddingNode(mutatedNN)
+            print(f"After added Node{mutatedNN.NeuralNet['Species']}")
 
         return mutatedNN
 
@@ -171,7 +176,8 @@ class Tweann:
         return baby1, baby2
 
     def ProgressDisplayer(self, info, fittestEver=True):
-        pass
+        self.GA.FittestGenomeEver['chromo'].InternalDrawGraph()
+        print(f"----{self.GA.FittestGenomeEver['chromo'].NeuralNet['Species']}")
 
     def ProgressOverallDisplayer(self, info, fittestEver=True):
         pass
@@ -198,7 +204,7 @@ class Tweann:
         maxNodesInLayer = -1
         maxNodes = 0
 
-        for neuron in NN:
+        for neuron in NN.NeuralNet['Network']:
             if maxNodes < neuron['NodeNum']:
                 maxNodes = neuron['NodeNum']
             if neuron['Layer'] == layerToAddNeuron:

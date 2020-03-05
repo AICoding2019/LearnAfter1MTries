@@ -126,8 +126,6 @@ def CrossOverRandomSwapPoint(mum, dad, chromoLength, crossOverRate):
     # just return parents as offspring dependent on the rate
     # or if parents are the same
     if random() > crossOverRate:  # or mum['chromo'] == dad['chromo']:
-        baby1 = mum.copy()
-        baby2 = dad.copy()
         return baby1, baby2
 
     crossoverPoint = randint(0, chromoLength)
@@ -136,9 +134,6 @@ def CrossOverRandomSwapPoint(mum, dad, chromoLength, crossOverRate):
         dad['chromo'][crossoverPoint:chromoLength]).copy()
     baby2['chromo'] = (dad['chromo'][0:crossoverPoint]).copy() + (
         mum['chromo'][crossoverPoint:chromoLength]).copy()
-
-    baby1['Fitness'] = 0
-    baby2['Fitness'] = 0
 
     return baby1, baby2
 
@@ -300,12 +295,14 @@ class GA:
         baby1Chromo.NeuralNet['Layers'] = layerRange
         baby2Chromo.NeuralNet['Layers'] = layerRange
 
-        for layer in range(layerRange):
-            mumForCrossOver = mumNetwork.FindNeuronsInLayer(layer)
-            dadForCrossOver = dadNetwork.FindNeuronsInLayer(layer)
+        mumForCrossOver = dict(chromo=[])
+        dadForCrossOver = dict(chromo=[])
+        for layer in range(layerRange+1):
+            mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(layer)
+            dadForCrossOver['chromo']= dadNetwork.FindNeuronsInLayer(layer)
             baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
-            baby1Chromo.NeuralNet['Network'].append(baby1Layer)
-            baby2Chromo.NeuralNet['Network'].append(baby2Layer)
+            baby1Chromo.NeuralNet['Network'].append(baby1Layer['chromo'][0])
+            baby2Chromo.NeuralNet['Network'].append(baby2Layer['chromo'][0])
 
         baby1 = {'chromo': baby1Chromo,
                  'Fitness': 0,

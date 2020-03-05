@@ -4,7 +4,7 @@ import numpy as np
 from random import random
 from random import choice
 from LearnAfter1MTries.TWEANN import TweannRender
-
+import copy
 
 class Neuron:
     def __init__(self):
@@ -57,9 +57,9 @@ class Neuron:
             inputs = np.pad(inputs, (0, -diff), 'constant', constant_values=(0, 0))
 
         bias = np.array(self.neuron['Bias'])
-        Out = self.neuron['Output']
-        recurrent = self.neuron['Recurrent']
-        recurrentWeight = self.neuron['RecurrentWeight']
+        Out = np.array(self.neuron['Output'])
+        recurrent = np.array(self.neuron['Recurrent'])
+        recurrentWeight = np.array(self.neuron['RecurrentWeight'])
 
         Output = inputs.dot(weights.transpose()) + bias + Out * recurrent * recurrentWeight
         # print('Output {}'.format(Output))
@@ -127,10 +127,10 @@ class NeuralNetwork:
     def UpdateGraph(self, NetInputs):
         nextLayerInput = []
         nextnextLayerInput = []
-        layerList = [neuron['Layer'] for neuron in self.Network]
+        layerList = [neuron['Layer'] for neuron in self.NeuralNet['Network']]
 
         Iter = 0
-        for index, neuron in enumerate(self.Network):
+        for index, neuron in enumerate(self.NeuralNet['Network']):
             if neuron['Layer'] == 0:
                 neuron['Inputs'] = NetInputs
                 self.Neuron.UpdateNeuron()
@@ -153,25 +153,29 @@ class NeuralNetwork:
     def FindNeuronsInLayer(self,layer):
         neuronInLayer = []
         for neuron in self.NeuralNet['Network']:
-            if neuron == layer:
+            if neuron['Layer'] == layer:
                 neuronInLayer.append(neuron)
         return neuronInLayer
 
     def AddNeuron(self, newNeuron):
-        addedNeuron = newNeuron.copy()
+
+        addedNeuron = newNeuron#copy.deepcopy(newNeuron)
         newNodeNum = -1
         newNodeID = -1
-        for neuron in self.Network:
-            if neuron['Layer'] == addedNeuron['Layer']:
+        for neuron in self.NeuralNet['Network']:
+            if neuron['Layer'] == addedNeuron.neuron['Layer']:
                 if neuron['NodeNum'] > newNodeNum:
                     newNodeNum = neuron['NodeNum']
                 if neuron['ID'] > newNodeID:
                     newNodeID = neuron['ID']
 
-        addedNeuron['NodeNum'] = newNodeNum + 1
-        addedNeuron['ID'] = newNodeID + 1
+        addedNeuron.neuron['NodeNum'] = newNodeNum + 1
+        addedNeuron.neuron['ID'] = newNodeID + 1
 
         self.Network.append(addedNeuron)
+        print('*******Node Added')
+        addedNeuron.neuron['Species']=[addedNeuron.neuron['Layer'], addedNeuron.neuron['ID']]
+        print('*******Node Added')
 
     @staticmethod
     def UserDefineGraph(numInputs, HiddenLayers, numOutputs, activation='relu', recurrent=0):
@@ -200,7 +204,7 @@ class NeuralNetwork:
             neuron['ID'] = ID
             neuron['Weights'] = [random() for inputs in range(0, nodes)]
             neuron['Bias'] = random()
-            neuron['Activati   on'] = activation
+            neuron['Activation'] = activation
             neuron['Recurrent'] = recurrent
             neuron['RecurrentWeight'] = random()
             neuron['Enabled'] = 1
@@ -238,9 +242,9 @@ class NeuralNetwork:
     def InternalDrawGraph(self):
         graphWindow = TweannRender.GraphWindow()
         self.DrawGraph(graphWindow, tileSize=64, offset=4)
-        while True:
-            graphWindow.draw()
-            graphWindow.eventManager()
+
+        graphWindow.draw()
+        graphWindow.eventManager()
 
     def LogGraph(self, directory, filename):
         with open(directory + filename + '.json', 'w') as json_file:
