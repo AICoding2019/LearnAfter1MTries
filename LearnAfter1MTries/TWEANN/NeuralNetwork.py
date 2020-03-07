@@ -36,7 +36,7 @@ class Neuron:
 
     @staticmethod
     def LeakyRelu(u):
-        return max(0.1 * u, u)
+        return max(-0.1, u)
 
     @staticmethod
     def Tanh(u):
@@ -51,6 +51,7 @@ class Neuron:
         weights = np.array(self.neuron['Weights'])
         diff = len(self.neuron['Inputs']) - len(self.neuron['Weights'])
 
+        #Padding is being done so that inputs and weights vector lengths dont have to be compatible
         if diff > 0:
             weights = np.pad(weights, (0, diff), 'constant', constant_values=(0, 0))
         if diff < 0:
@@ -88,8 +89,6 @@ class NeuralNetwork:
         self.numOutputs = numOutputs
 
         self.Neuron = Neuron()
-
-        self.Network = []
         self.NeuralNet = {
             'Network': [],
             'Output': 0,
@@ -100,7 +99,7 @@ class NeuralNetwork:
         }
 
     def __str__(self):
-        return '<%s>' % self.Network
+        return '<%s>' % self.NeuralNet
 
     def CreateInitialGraph(self):
         # Each Input connected to each output neuron and it activation function is a sigmoid
@@ -116,10 +115,9 @@ class NeuralNetwork:
             neuron['RecurrentWeight'] = random()
             neuron['Enabled'] = choice([0, 1])
             neuron['Output'] = 0
-            self.Network.append(neuron)
+            self.NeuralNet['Network'].append(neuron)
             neuron = []
 
-        self.NeuralNet['Network'] = self.Network
         self.NeuralNet['Species'] = [0, self.numOutputs]
         self.NeuralNet['MaxNodes'] = max(self.numOutputs, self.numInputs)
         self.NeuralNet['Fitness'] = 0
@@ -159,24 +157,22 @@ class NeuralNetwork:
 
     def AddNeuron(self, newNeuron):
 
-        addedNeuron = newNeuron#copy.deepcopy(newNeuron)
+        addedNeuron = copy.deepcopy(newNeuron)
         newNodeNum = -1
         newNodeID = -1
         for neuron in self.NeuralNet['Network']:
-            if neuron['Layer'] == addedNeuron.neuron['Layer']:
+            if neuron['Layer'] == addedNeuron['Layer']:
                 if neuron['NodeNum'] > newNodeNum:
                     newNodeNum = neuron['NodeNum']
+
                 if neuron['ID'] > newNodeID:
                     newNodeID = neuron['ID']
 
-        addedNeuron.neuron['NodeNum'] = newNodeNum + 1
-        addedNeuron.neuron['ID'] = newNodeID + 1
-
-        self.Network.append(addedNeuron)
-        print('*******Node Added')
-        addedNeuron.neuron['Species']=[addedNeuron.neuron['Layer'], addedNeuron.neuron['ID']]
-        print('*******Node Added')
-
+        addedNeuron['NodeNum'] = newNodeNum + 1
+        addedNeuron['ID'] = newNodeID + 1
+        addedNeuron['Species'] = [addedNeuron['Layer'], addedNeuron['ID']]
+        self.NeuralNet['Network'].append(addedNeuron)
+        
     @staticmethod
     def UserDefineGraph(numInputs, HiddenLayers, numOutputs, activation='relu', recurrent=0):
         network = NeuralNetwork(numInputs, numOutputs)
@@ -197,7 +193,7 @@ class NeuralNetwork:
                 neuron['Output'] = 0
                 neuron['NodeNum'] = nodeNum
                 ID += 1
-                network.Network.append(neuron.copy())
+                network.NeuralNet['Network'].append(neuron.copy())
 
         for outs in range(0, numOutputs):
             neuron['Layer'] = -1
@@ -211,9 +207,8 @@ class NeuralNetwork:
             neuron['Output'] = 0
             neuron['NodeNum'] = outs
             ID += 1
-            network.Network.append(neuron.copy())
+            network.NeuralNet['Network'].append(neuron.copy())
 
-        network.NeuralNet['Network'] = network.Network
         network.NeuralNet['Layers'] = len(HiddenLayers) + 1
         network.NeuralNet['Species'] = species.copy()
         species.insert(0, numInputs)
@@ -225,7 +220,7 @@ class NeuralNetwork:
         for inputs in range(0, self.numInputs):
             TweannRender.Inputs(graphWindow, 0, inputs, tileSize, offset, inputOffset)
 
-        for node in self.Network:
+        for node in self.NeuralNet['Network']:
 
             if node['Layer'] != -1:
                 nodeXpos = node['Layer'] + 1
@@ -283,5 +278,5 @@ if __name__ == '__main__':
     # print(Net2.Network[10])
 
     # Net2.LogGraph('', 'Net2')
-
-    Net2.InternalDrawGraph()
+    while True:
+        Net2.InternalDrawGraph()

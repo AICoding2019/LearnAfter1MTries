@@ -119,10 +119,10 @@ class Tweann:
             if random() < self.MutationRate:
                 neuron['Enabled'] = choice([0, 1])
 
-        if random() < self.MutationRate:
-            print(f"Before added Node{mutatedNN.NeuralNet['Species']}")
-            self.MutateByAddingNode(mutatedNN)
-            print(f"After added Node{mutatedNN.NeuralNet['Species']}")
+        if random() < 1:#self.MutationRate:
+ #           print(f"Before added Node{mutatedNN.NeuralNet['Species']}")
+            mutatedNN= self.MutateByAddingNode(mutatedNN)
+ #           print(f"After added Node{mutatedNN.NeuralNet['Species']}")
 
         return mutatedNN
 
@@ -177,13 +177,14 @@ class Tweann:
 
     def ProgressDisplayer(self, info, fittestEver=True):
         self.GA.FittestGenomeEver['chromo'].InternalDrawGraph()
-        print(f"----{self.GA.FittestGenomeEver['chromo'].NeuralNet['Species']}")
+       # print(f"----{self.GA.FittestGenomeEver['chromo'].NeuralNet['Species']}")
 
     def ProgressOverallDisplayer(self, info, fittestEver=True):
         pass
 
     def InfoBoard(self, text):
-        print(text)
+        #print(text)
+        pass
 
     def Epoch(self):
         self.GA.Epoch()
@@ -197,37 +198,44 @@ class Tweann:
         if random() < 0.5:
             network.AddNeuron(neuron)
 
-    @staticmethod
-    def MutateByAddingNode(NN):
+    #@staticmethod
+    def MutateByAddingNode(self, NNtoMutate):
+        NN=copy.deepcopy(NNtoMutate)
         layerToAddNeuron = randrange(NN.NeuralNet['Layers'] + 1)
 
         maxNodesInLayer = -1
         maxNodes = 0
+        if self.GA.Generation == 4:
+            y=1
 
         for neuron in NN.NeuralNet['Network']:
+            print(f"---NodeNum={neuron['NodeNum']}")
             if maxNodes < neuron['NodeNum']:
                 maxNodes = neuron['NodeNum']
             if neuron['Layer'] == layerToAddNeuron:
                 if maxNodesInLayer < neuron['NodeNum']:
                     maxNodesInLayer = neuron['NodeNum']
+                    print(f'---maxNodesInLayer={maxNodesInLayer}-{self.GA.Generation}')
 
         addNeuron = Neuron()
         addNeuron.neuron['ID'] = []
-        addNeuron.neuron['Weights'] = random()
+        addNeuron.neuron['Weights'] = [random() for inputs in range(0, len(neuron['Weights']))]
         addNeuron.neuron['Bias'] = random()
         addNeuron.neuron['Enabled'] = 1
         addNeuron.neuron['Recurrent'] = choice([0, 1])
         addNeuron.neuron['RecurrentWeight'] = random()
         addNeuron.neuron['Layer'] = layerToAddNeuron
         addNeuron.neuron['Activation'] = choice(addNeuron.activationFunc)
-        addNeuron.neuron['Inputs'] = []
+        addNeuron.neuron['Inputs'] = neuron['Inputs']
         addNeuron.neuron['NodeNum'] = maxNodesInLayer + 1
         addNeuron.neuron['Output'] = 0
         addNeuron.neuron['ID'] = maxNodes + 1
 
-        NN.AddNeuron(addNeuron)
+        NN.AddNeuron(addNeuron.neuron)
         NN.NeuralNet['Species'] = [maxNodes + 1, NN.NeuralNet['Layers']]  # [ num hiddenlayers, layers]
         NN.NeuralNet['MaxNodes'] = maxNodes + 1
+
+        return NN
 
 
 if __name__ == '__main__':
@@ -259,7 +267,7 @@ if __name__ == '__main__':
         return fitness, numberCorrect
 
 
-    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=100, fitnessTestFunction=TestFitness)
+    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=2, numGeneration=10, fitnessTestFunction=TestFitness)
     testXOR.Evolve()
 
     while True:

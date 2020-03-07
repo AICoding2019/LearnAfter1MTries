@@ -469,7 +469,9 @@ class GA:
 
             self.InfoBoard()
             self.PlotData()
-            print('------')
+
+            if self.Generation == 3:
+                pass
 
         print('done with loop')
 
