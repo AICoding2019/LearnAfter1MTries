@@ -119,10 +119,8 @@ class Tweann:
             if random() < self.MutationRate:
                 neuron['Enabled'] = choice([0, 1])
 
-        if random() < 1:#self.MutationRate:
- #           print(f"Before added Node{mutatedNN.NeuralNet['Species']}")
-            mutatedNN= self.MutateByAddingNode(mutatedNN)
- #           print(f"After added Node{mutatedNN.NeuralNet['Species']}")
+        if random() < self.MutationRate:
+            mutatedNN = self.MutateByAddingNode(mutatedNN)
 
         return mutatedNN
 
@@ -177,13 +175,14 @@ class Tweann:
 
     def ProgressDisplayer(self, info, fittestEver=True):
         self.GA.FittestGenomeEver['chromo'].InternalDrawGraph()
-       # print(f"----{self.GA.FittestGenomeEver['chromo'].NeuralNet['Species']}")
+
+    # print(f"----{self.GA.FittestGenomeEver['chromo'].NeuralNet['Species']}")
 
     def ProgressOverallDisplayer(self, info, fittestEver=True):
         pass
 
     def InfoBoard(self, text):
-        #print(text)
+        # print(text)
         pass
 
     def Epoch(self):
@@ -198,15 +197,15 @@ class Tweann:
         if random() < 0.5:
             network.AddNeuron(neuron)
 
-    #@staticmethod
+    # @staticmethod
     def MutateByAddingNode(self, NNtoMutate):
-        NN=copy.deepcopy(NNtoMutate)
+        NN = copy.deepcopy(NNtoMutate)
         layerToAddNeuron = randrange(NN.NeuralNet['Layers'] + 1)
 
         maxNodesInLayer = -1
         maxNodes = 0
         if self.GA.Generation == 4:
-            y=1
+            y = 1
 
         for neuron in NN.NeuralNet['Network']:
             print(f"---NodeNum={neuron['NodeNum']}")
