@@ -83,7 +83,7 @@ class NeuralNetworkTestCase(unittest.TestCase):
         testNeuralNetwork.CreateInitialGraph()
 
         actual = testNeuralNetwork.NeuralNet['Output']
-        expected = 0
+        expected = []
 
         self.assertEqual(expected, actual)
 
@@ -300,7 +300,7 @@ class NeuralNetworkTestCase(unittest.TestCase):
         testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
 
         actual = testNeuralNetwork.NeuralNet['Output']
-        expected = 0
+        expected = []
 
         self.assertEqual(expected, actual)
 
@@ -379,7 +379,7 @@ class NeuralNetworkTestCase(unittest.TestCase):
         actual = [len(element[0]) for element in actualData[key]]
         hiddenWeightsNum = []
         for hid in hiddenLayers:
-            hiddenWeightsNum += [hid]*hid
+            hiddenWeightsNum += [hid] * hid
         expected = hiddenWeightsNum + [numOutputs] * numOutputs
 
         self.assertEqual(expected, actual)
@@ -525,13 +525,109 @@ class NeuralNetworkTestCase(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_NeuralNetwork_UpdateGraph(self):
+        numInputs = 2
+        numOutputs = 2
+        hiddenLayers = [2, 1, 3]
+        X = [1, 2]
+        w00 = [1, 2]
+        w01 = [2, 4]
 
-        self.assertEqual(True, True)
+        w10 = [5]
+
+        w20 = [5, 6, 7]
+        w21 = [8, 9, 10]
+        w22 = [11, 12, 13]
+
+        o0 = [14, 15]
+        o1 = [16, 17]
+
+        weight = [w00] + [w01] + [w10] + [w20] + [w21] + [w22] + [o0] + [o1]
+
+        b = 1
+        r = 1
+        testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
+        maxNodes = sum(hiddenLayers) + numOutputs
+
+        for neuron in range(0, maxNodes):
+            testNeuralNetwork.NeuralNet['Network'][neuron]['Bias'] = 1
+            testNeuralNetwork.NeuralNet['Network'][neuron]['Recurrent'] = 1
+            testNeuralNetwork.NeuralNet['Network'][neuron]['RecurrentWeight'] = 1
+            testNeuralNetwork.NeuralNet['Network'][neuron]['Weights'] = weight[neuron]
+
+        testNeuralNetwork.UpdateGraph(X)
+
+        # Layer 0 output
+        y00 = X[0] * w00[0] + X[1] * w00[1] + b
+        y01 = X[0] * w01[0] + X[1] * w01[1] + b
+
+        # Layer 1 output
+        y10 = y00 * w10[0] + b
+
+        # Layer 2 output
+        y20 = y10 * w20[0] + b
+        y21 = y10 * w21[0] + b
+        y22 = y10 * w22[0] + b
+
+        #  output
+        yo0 = y20 * o0[0] + y21 * o0[1] + b
+        yo1 = y20 * o1[0] + y21 * o1[1] + b
+
+        expected = [y00, y01, y10, y20, y21, y22, yo0, yo1]
+
+        testNeuralNetwork.UpdateGraph(X)
+
+        # Layer 0 output
+        y00 = X[0] * w00[0] + X[1] * w00[1] + b + y00 * r
+        y01 = X[0] * w01[0] + X[1] * w01[1] + b + y01 * r
+
+        # Layer 1 output
+        y10 = y00 * w10[0] + b + y10 * r
+
+        # Layer 2 output
+        y20 = y10 * w20[0] + b + y20 * r
+        y21 = y10 * w21[0] + b + y21 * r
+        y22 = y10 * w22[0] + b + y22 * r
+
+        #  output
+        yo0 = y20 * o0[0] + y21 * o0[1] + b + yo0 * r
+        yo1 = y20 * o1[0] + y21 * o1[1] + b + yo1 * r
+
+        expected = [y00, y01, y10, y20, y21, y22, yo0, yo1]
+
+        actualData = {'Output': []}
+        for neuron in testNeuralNetwork.NeuralNet['Network']:
+            actualData['Output'].append(neuron['Output'])
+
+        actual = actualData['Output']
+        self.assertEqual(expected, actual)
 
     def test_NeuralNetwork_FindNeuronsInLayer(self):
-        self.assertEqual(True, True)
+        numInputs = 6
+        numOutputs = 4
+        hiddenLayers = [5, 3, 4]
+        testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
+
+        neuronsInLayer0 = testNeuralNetwork.FindNeuronsInLayer(0)
+        neuronsInLayer1 = testNeuralNetwork.FindNeuronsInLayer(1)
+        neuronsInLayer2 = testNeuralNetwork.FindNeuronsInLayer(2)
+        neuronsInOutput = testNeuralNetwork.FindNeuronsInLayer(-1)
+
+        expected = neuronsInLayer0 + neuronsInLayer1 + neuronsInLayer2 + neuronsInOutput
+        actual = testNeuralNetwork.NeuralNet['Network']
+
+        self.assertEqual(expected, actual)
 
     def test_NeuralNetwork_AddNeuron(self):
+        numInputs = 6
+        numOutputs = 4
+        hiddenLayers = [5, 3, 4]
+        testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
+
+        newNeuron = Neuron()
+        newNeuron.neuron['Layer'] = 2
+
+        testNeuralNetwork.AddNeuron(newNeuron)
+
         self.assertEqual(True, True)
 
     def test_NeuralNetwork_DrawGraph(self):

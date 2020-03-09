@@ -89,10 +89,9 @@ class NeuralNetwork:
         self.numInputs = numInputs
         self.numOutputs = numOutputs
 
-        self.Neuron = Neuron()
         self.NeuralNet = {
             'Network': [],
-            'Output': 0,
+            'Output': [],
             'Layers': 0,
             'Species': [-1, -1],  # [ num hiddenlayers, layers]
             'MaxNodes': None,
@@ -105,9 +104,10 @@ class NeuralNetwork:
     def CreateInitialGraph(self):
         # Each Input connected to each output neuron and it activation function is a sigmoid
         for outs in range(0, self.numOutputs):
-            neuron = self.Neuron.neuron
+            newNeuron = Neuron()
+            neuron = newNeuron.neuron
             neuron['Layer'] = 0
-            neuron['Activation'] = choice(self.Neuron.activationFunc)
+            neuron['Activation'] = choice(newNeuron.activationFunc)
             neuron['ID'] = outs
             neuron['NodeNum'] = outs
             neuron['Weights'] = [random() for _ in range(0, self.numInputs)]
@@ -125,28 +125,29 @@ class NeuralNetwork:
     def UpdateGraph(self, NetInputs):
         nextLayerInput = []
         nextnextLayerInput = []
+
         layerList = [neuron['Layer'] for neuron in self.NeuralNet['Network']]
 
         Iter = 0
         for index, neuron in enumerate(self.NeuralNet['Network']):
+            NeuralNetNeuron = Neuron()
+            NeuralNetNeuron.neuron = neuron
             if neuron['Layer'] == 0:
                 neuron['Inputs'] = NetInputs
-                self.Neuron.UpdateNeuron()
-                neuron['Output'] = self.Neuron.neuron['Output']
-                self.NeuralNet['Output'] = neuron['Output']
-                nextLayerInput.append(self.Neuron.neuron['Output'])
+                NeuralNetNeuron.UpdateNeuron()
+                nextLayerInput.append(NeuralNetNeuron.neuron['Output'])
             else:
                 if neuron['Layer'] == layerList[index]:
-                    neuron['Inputs'] = nextLayerInput.copy()
-                    self.Neuron.UpdateNeuron()
-                    neuron['Output'] = self.Neuron.neuron['Output']
-                    self.NeuralNet['Output'] = neuron['Output']
-                    nextnextLayerInput.append(self.Neuron.neuron['Output'])
+                    neuron['Inputs'] = copy.deepcopy(nextLayerInput)
+                    NeuralNetNeuron.UpdateNeuron()
+                    nextnextLayerInput.append(NeuralNetNeuron.neuron['Output'])
                     Iter += 1
                     if layerList.count(layerList[index]) == Iter:
                         Iter = 0
-                        nextLayerInput = nextnextLayerInput.copy()
+                        nextLayerInput = copy.deepcopy(nextnextLayerInput)
                         nextnextLayerInput = []
+                if neuron['Layer'] == -1:
+                    self.NeuralNet['Output'].append(NeuralNetNeuron.neuron['Output'])
 
     def FindNeuronsInLayer(self, layer):
         neuronInLayer = []
@@ -156,7 +157,6 @@ class NeuralNetwork:
         return neuronInLayer
 
     def AddNeuron(self, newNeuron):
-
         addedNeuron = copy.deepcopy(newNeuron)
         newNodeNum = -1
         newNodeID = -1
@@ -176,7 +176,7 @@ class NeuralNetwork:
     @staticmethod
     def UserDefineGraph(numInputs, hiddenLayers, numOutputs, activation='relu', recurrent=0):
         network = NeuralNetwork(numInputs, numOutputs)
-        neuron = network.Neuron.neuron
+        neuron = Neuron().neuron
         species = copy.deepcopy(hiddenLayers)
         species.append(numOutputs)
         ID = 0
@@ -198,7 +198,7 @@ class NeuralNetwork:
         for outs in range(0, numOutputs):
             neuron['Layer'] = -1
             neuron['ID'] = ID
-            neuron['Weights'] = [random() for _ in range(0, hiddenLayers[-1])]
+            neuron['Weights'] = [random() for _ in range(0, numOutputs)]
             neuron['Bias'] = random()
             neuron['Activation'] = activation
             neuron['Recurrent'] = recurrent
