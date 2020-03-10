@@ -625,19 +625,15 @@ class NeuralNetworkTestCase(unittest.TestCase):
 
         newNeuron = Neuron()
         newNeuron.neuron['Layer'] = 2
+        newNeuron.neuron['ID'] = 2
 
-        testNeuralNetwork.AddNeuron(newNeuron)
+        testNeuralNetwork.AddNeuron(newNeuron.neuron)
+        actual = testNeuralNetwork.NeuralNet['Network'][16]
+        expected = newNeuron.neuron
+        expected['ID'] = sum(hiddenLayers) + numOutputs
+        expected['NodeNum'] = hiddenLayers[newNeuron.neuron['Layer'] - 1] + 1
 
-        self.assertEqual(True, True)
-
-    def test_NeuralNetwork_DrawGraph(self):
-        self.assertEqual(True, True)
-
-    def test_NeuralNetwork_InternalDrawGraph(self):
-        self.assertEqual(True, True)
-
-    def test_NeuralNetwork_LogGraph(self):
-        self.assertEqual(True, True)
+        self.assertEqual(expected, actual)
 
 
 if __name__ == '__main__':

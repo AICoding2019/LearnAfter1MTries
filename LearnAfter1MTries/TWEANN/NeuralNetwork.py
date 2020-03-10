@@ -165,12 +165,12 @@ class NeuralNetwork:
                 if neuron['NodeNum'] > newNodeNum:
                     newNodeNum = neuron['NodeNum']
 
-                if neuron['ID'] > newNodeID:
-                    newNodeID = neuron['ID']
+            if neuron['ID'] > newNodeID:
+                newNodeID = neuron['ID']
 
         addedNeuron['NodeNum'] = newNodeNum + 1
         addedNeuron['ID'] = newNodeID + 1
-        addedNeuron['Species'] = [addedNeuron['Layer'], addedNeuron['ID']]
+        self.NeuralNet['Species'] = [addedNeuron['Layer'], addedNeuron['ID']]
         self.NeuralNet['Network'].append(addedNeuron)
 
     @staticmethod
@@ -247,4 +247,19 @@ class NeuralNetwork:
 
 
 if __name__ == '__main__':
-    pass
+
+    # numInputs = 6
+    # numOutputs = 4
+    #testNeuralNetwork = NeuralNetwork(numInputs, numOutputs)
+    # testNeuralNetwork.CreateInitialGraph()
+    numInputs = 6
+    numOutputs = 4
+    hiddenLayers = [5, 3, 4]
+    testNeuralNetwork = NeuralNetwork(numInputs, numOutputs)
+    testNeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
+    #
+
+    while True:
+        testNeuralNetwork.InternalDrawGraph()
+
+
