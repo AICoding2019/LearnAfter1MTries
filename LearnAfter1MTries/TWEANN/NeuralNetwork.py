@@ -236,7 +236,7 @@ class NeuralNetwork:
 
     def InternalDrawGraph(self):
         graphWindow = TweannRender.GraphWindow()
-        self.DrawGraph(graphWindow, tileSize=64, offset=4)
+        self.DrawGraph(graphWindow, tileSize=24, offset=0)
 
         graphWindow.draw()
         graphWindow.eventManager()
@@ -248,16 +248,11 @@ class NeuralNetwork:
 
 if __name__ == '__main__':
 
-    # numInputs = 6
-    # numOutputs = 4
-    #testNeuralNetwork = NeuralNetwork(numInputs, numOutputs)
-    # testNeuralNetwork.CreateInitialGraph()
     numInputs = 6
-    numOutputs = 4
-    hiddenLayers = [5, 3, 4]
-    testNeuralNetwork = NeuralNetwork(numInputs, numOutputs)
-    testNeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
-    #
+    numOutputs = 2
+    hiddenLayers = [5, 3,2,1, 4]
+
+    testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
 
     while True:
         testNeuralNetwork.InternalDrawGraph()

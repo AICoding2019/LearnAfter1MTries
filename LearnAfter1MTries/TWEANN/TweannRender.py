@@ -42,7 +42,7 @@ class GraphWindow:
 
 
 class Perceptron(pg.sprite.Sprite):
-    def __init__(self, environ, x=0, y=0,Enabled=True, Activation=True, Recurrent=True, TILESIZE=64, XOFFSET=0, YOFFSET=0):
+    def __init__(self, environ, x=0, y=0,Enabled=True, Activation=True, Recurrent=True, TILESIZE=24, XOFFSET=0, YOFFSET=0):
         self._layer = 3
         self.groups = environ.all_sprites, environ.perceptron
         pg.sprite.Sprite.__init__(self, self.groups)
@@ -50,7 +50,7 @@ class Perceptron(pg.sprite.Sprite):
         self.environ = environ
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(WHITE)
-        #pg.draw.circle(self.image, MAGENTA, (32, 32), 32)
+        #pg.draw.circle(self.image, MAGENTA, (12, 12), 12)
         self.rect = self.image.get_rect()
         self.x = x
         self.y = y
@@ -61,17 +61,17 @@ class Perceptron(pg.sprite.Sprite):
             self.image.fill(LIGHTGREY)
 
         if not Enabled:
-            pg.draw.circle(self.image, DISABLEGREY, (32, 32), 32)
+            pg.draw.circle(self.image, DISABLEGREY, (12, 12), 12)
         elif Activation== 'sigmoid':
-            pg.draw.circle(self.image, RED, (32, 32), 32)
+            pg.draw.circle(self.image, RED, (12, 12), 12)
         elif Activation == 'relu':
-            pg.draw.circle(self.image, GREEN, (32, 32), 32)
+            pg.draw.circle(self.image, GREEN, (12, 12), 12)
         elif Activation == 'leakyRelu':
-            pg.draw.circle(self.image, BLUE, (32, 32), 32)
+            pg.draw.circle(self.image, BLUE, (12, 12), 12)
         elif Activation == 'tanh':
-            pg.draw.circle(self.image, YELLOW, (32, 32), 32)
+            pg.draw.circle(self.image, YELLOW, (12, 12), 12)
         elif Activation == 'linear':
-            pg.draw.circle(self.image, DARKGREY, (32, 32), 32)
+            pg.draw.circle(self.image, DARKGREY, (12, 12), 12)
 
 
 class Inputs(pg.sprite.Sprite):
@@ -83,7 +83,7 @@ class Inputs(pg.sprite.Sprite):
         self.environ = environ
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(WHITE)
-        pg.draw.circle(self.image, MAGENTA, (32, 32), 32)
+        pg.draw.circle(self.image, MAGENTA, (12, 12), 12)
         self.rect = self.image.get_rect()
         self.x = x
         self.y = y
@@ -100,7 +100,7 @@ class Outputs(pg.sprite.Sprite):
         self.environ = environ
         self.image = pg.Surface((TILESIZE, TILESIZE))
         self.image.fill(WHITE)
-        pg.draw.circle(self.image, MAGENTA, (32, 32), 32)
+        pg.draw.circle(self.image, MAGENTA, (12, 12), 12)
         self.rect = self.image.get_rect()
         self.x = x
         self.y = y
