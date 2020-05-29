@@ -29,7 +29,12 @@ class Neuron:
 
     @staticmethod
     def Sigmoid(u):
-        return 1 / (1 + math.exp(-u))
+        try:
+            y = 1 / (1 + math.exp(-u))
+        except OverflowError:
+            if u > 0:
+                y = 1
+        return y
 
     @staticmethod
     def Relu(u):
@@ -81,7 +86,7 @@ class Neuron:
         if self.neuron['Activation'] == 'linear':
             self.neuron['Output'] = self.Linear(Output)
 
-        # print('Act Output {}'.format(self.neuron['Output']))
+        self.neuron['Output'] = self.neuron['Output'] * self.neuron['Enabled']
 
 
 class NeuralNetwork:
@@ -93,7 +98,7 @@ class NeuralNetwork:
             'Network': [],
             'Output': [],
             'Layers': 0,
-            'Species': [-1, -1],  # [ num hiddenlayers, layers]
+            'Species': [self.numInputs, 0, self.numOutputs],  # [inputs, hiddenlayers, outputs]
             'MaxNodes': None,
             'Fitness': None
         }
@@ -106,7 +111,7 @@ class NeuralNetwork:
         for outs in range(0, self.numOutputs):
             newNeuron = Neuron()
             neuron = newNeuron.neuron
-            neuron['Layer'] = 0
+            neuron['Layer'] = -1
             neuron['Activation'] = choice(newNeuron.activationFunc)
             neuron['ID'] = outs
             neuron['NodeNum'] = outs
@@ -118,8 +123,9 @@ class NeuralNetwork:
             neuron['Output'] = 0
             self.NeuralNet['Network'].append(copy.deepcopy(neuron))
 
-        self.NeuralNet['Species'] = [0, self.numOutputs]
-        self.NeuralNet['MaxNodes'] = max(self.numOutputs, self.numInputs)
+        self.NeuralNet['Layers'] = 0
+        self.NeuralNet['Species'] = [self.numInputs, 0, self.numOutputs]
+        self.NeuralNet['MaxNodes'] = max(self.NeuralNet['Species'])
         self.NeuralNet['Fitness'] = None
 
     def UpdateGraph(self, NetInputs):
@@ -147,7 +153,7 @@ class NeuralNetwork:
                         nextLayerInput = copy.deepcopy(nextnextLayerInput)
                         nextnextLayerInput = []
                 if neuron['Layer'] == -1:
-                    self.NeuralNet['Output'].append(NeuralNetNeuron.neuron['Output'])
+                    self.NeuralNet['Output'].append(copy.deepcopy(NeuralNetNeuron.neuron['Output']))
 
     def FindNeuronsInLayer(self, layer):
         neuronInLayer = []
@@ -160,6 +166,7 @@ class NeuralNetwork:
         addedNeuron = copy.deepcopy(newNeuron)
         newNodeNum = -1
         newNodeID = -1
+
         for neuron in self.NeuralNet['Network']:
             if neuron['Layer'] == addedNeuron['Layer']:
                 if neuron['NodeNum'] > newNodeNum:
@@ -170,15 +177,39 @@ class NeuralNetwork:
 
         addedNeuron['NodeNum'] = newNodeNum + 1
         addedNeuron['ID'] = newNodeID + 1
-        self.NeuralNet['Species'] = [addedNeuron['Layer'], addedNeuron['ID']]
-        self.NeuralNet['Network'].append(addedNeuron)
+
+        if len(self.NeuralNet['Species']) - 2 > addedNeuron['Layer']:
+            self.NeuralNet['Species'][addedNeuron['Layer'] + 1] = self.NeuralNet['Species'][
+                                                                      addedNeuron['Layer'] + 1] + 1
+        else:
+            insertSpecies = len(self.NeuralNet['Species']) - 1
+            self.NeuralNet['Species'].insert(insertSpecies, 1)
+            addedNeuron['Layer'] = len(self.NeuralNet['Species']) - 3
+
+        if addedNeuron['Layer'] > self.NeuralNet['Layers']:
+            self.NeuralNet['Layers'] = addedNeuron['Layer']
+
+        self.NeuralNet['MaxNodes'] = max(self.NeuralNet['Species'])
+
+        self.NeuralNet['Network'].append(copy.deepcopy(addedNeuron))
+
+    def findMaxNodes(self):
+        maxNodes = -1
+        for neuron in self.NeuralNet['Network']:
+            if neuron['NodeNum'] > maxNodes:
+                maxNodes = neuron['NodeNum']
+
+        self.NeuralNet['MaxNodes'] = max(maxNodes, self.numInputs)
 
     @staticmethod
     def UserDefineGraph(numInputs, hiddenLayers, numOutputs, activation='relu', recurrent=0):
         network = NeuralNetwork(numInputs, numOutputs)
-        neuron = Neuron().neuron
-        species = copy.deepcopy(hiddenLayers)
-        species.append(numOutputs)
+        newNeuron = Neuron()
+        neuron = newNeuron.neuron
+        species = [numInputs] + hiddenLayers + [numOutputs]
+
+        if activation == 'random':
+            activation = choice(newNeuron.activationFunc)
         ID = 0
         for layer, nodes in enumerate(hiddenLayers):
             neuron['Layer'] = layer
@@ -210,24 +241,24 @@ class NeuralNetwork:
             network.NeuralNet['Network'].append(copy.deepcopy(neuron))
 
         network.NeuralNet['Layers'] = len(hiddenLayers) + 1
-        network.NeuralNet['Species'] = species.copy()
-        species.insert(0, numInputs)
+        network.NeuralNet['Species'] = species
         network.NeuralNet['MaxNodes'] = max(species)
         return network
 
-    def DrawGraph(self, graphWindow, tileSize=64, offset=0):
+    def DrawGraph(self, graphWindow, tileSize=24, offset=0):
+        print('Drawing Species',self.NeuralNet['Species'])
         inputOffset = (self.NeuralNet['MaxNodes'] - self.numInputs) / 2
         for inputs in range(0, self.numInputs):
             TweannRender.Inputs(graphWindow, 0, inputs, tileSize, offset, inputOffset)
 
         for node in self.NeuralNet['Network']:
-
             if node['Layer'] != -1:
                 nodeXpos = node['Layer'] + 1
+                elements = self.NeuralNet['Species'][node['Layer'] + 1]
             else:
-                nodeXpos = self.NeuralNet['Layers']
+                nodeXpos = len(self.NeuralNet['Species']) - 1
+                elements = self.NeuralNet['Species'][-1]
 
-            elements = self.NeuralNet['Species'][node['Layer']]
             nodeOffset = (self.NeuralNet['MaxNodes'] - elements) / 2
 
             TweannRender.Perceptron(graphWindow, nodeXpos,
@@ -237,6 +268,9 @@ class NeuralNetwork:
     def InternalDrawGraph(self):
         graphWindow = TweannRender.GraphWindow()
         self.DrawGraph(graphWindow, tileSize=24, offset=0)
+        print(f"Drawing best ever Species: {self.NeuralNet['Species']}")
+        if self.NeuralNet['Species'][1] > 0:
+            y = 0
 
         graphWindow.draw()
         graphWindow.eventManager()
@@ -249,12 +283,20 @@ class NeuralNetwork:
 if __name__ == '__main__':
 
     numInputs = 6
-    numOutputs = 2
-    hiddenLayers = [5, 3,2,1, 4]
+    numOutputs = 3
+    hiddenLayers = [5, 3, 2, 1, 4]
 
-    testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
+    #    testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
+    testNeuralNetwork = NeuralNetwork(numInputs, numOutputs)
+    testNeuralNetwork.CreateInitialGraph()
+    # newNeuron = Neuron()
+    # newNeuron.neuron['Layer'] = 0
+    # newNeuron.neuron['ID'] = 2
+    # newNeuron.neuron['Activation'] = 'tanh'
+    # testNeuralNetwork.AddNeuron(newNeuron.neuron)
+
+    print(testNeuralNetwork.NeuralNet['Species'])
 
     while True:
         testNeuralNetwork.InternalDrawGraph()
-
-
+        y = 0

@@ -130,6 +130,9 @@ def CrossOverRandomSwapPoint(mum, dad, chromoLength, crossOverRate):
 
     crossoverPoint = randint(0, chromoLength)
 
+    if len(mum['chromo'][0:crossoverPoint])== 0 or len(dad['chromo'][0:crossoverPoint])== 0:
+        return baby1, baby2
+
     baby1['chromo'] = (mum['chromo'][0:crossoverPoint]).copy() + (
         dad['chromo'][crossoverPoint:chromoLength]).copy()
     baby2['chromo'] = (dad['chromo'][0:crossoverPoint]).copy() + (
@@ -286,23 +289,45 @@ class GA:
     def CrossOverNeuralNetwork(self, mumChrome, dadChrome):
         mumNetwork = mumChrome['chromo']
         dadNetwork = dadChrome['chromo']
-        layerRange = min(mumNetwork.NeuralNet['Layers'], dadNetwork.NeuralNet['Layers'])
+
+        mumLayerList =mumNetwork.NeuralNet['Species'][1:]
+        dadLayerList = dadNetwork.NeuralNet['Species'][1:]
+        if len(mumLayerList) > len(dadLayerList):
+            maxLayerList =  mumLayerList
+        else:
+            maxLayerList = dadLayerList
+
         numInputs = mumNetwork.numInputs
         numOutputs = mumNetwork.numInputs
         baby1Chromo = NeuralNetwork(numInputs, numOutputs)
         baby2Chromo = NeuralNetwork(numInputs, numOutputs)
 
-        baby1Chromo.NeuralNet['Layers'] = layerRange
-        baby2Chromo.NeuralNet['Layers'] = layerRange
-
         mumForCrossOver = dict(chromo=[])
         dadForCrossOver = dict(chromo=[])
-        for layer in range(layerRange+1):
-            mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(layer)
-            dadForCrossOver['chromo']= dadNetwork.FindNeuronsInLayer(layer)
-            baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
-            baby1Chromo.NeuralNet['Network'].append(baby1Layer['chromo'][0])
-            baby2Chromo.NeuralNet['Network'].append(baby2Layer['chromo'][0])
+        for index, element in enumerate(maxLayerList):
+            if index < len(maxLayerList)-1:
+                mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(index)
+                dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(index)
+                #if len(mumForCrossOver['chromo']) != 0 and len(dadForCrossOver['chromo']) != 0:
+                self.ChromoLength = element
+                if element ==2:
+                    y=0
+                baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
+
+                baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network']+baby1Layer['chromo']
+                baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network']+baby2Layer['chromo']
+            else:
+                mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(-1)
+                dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(-1)
+                self.ChromoLength = element
+                baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
+                baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network'] + baby1Layer['chromo']
+                baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network'] + baby2Layer['chromo']
+
+        baby1Chromo.NeuralNet['MaxNodes'] = mumNetwork.NeuralNet['MaxNodes']
+        baby2Chromo.NeuralNet['MaxNodes'] = dadNetwork.NeuralNet['MaxNodes']
+        baby1Chromo.NeuralNet['Species'] = copy.deepcopy(mumNetwork.NeuralNet['Species'])
+        baby2Chromo.NeuralNet['Species'] = copy.deepcopy(dadNetwork.NeuralNet['Species'])
 
         baby1 = {'chromo': baby1Chromo,
                  'Fitness': 0,
@@ -369,16 +394,11 @@ class GA:
     def UpdateFitnessScores(self, fitnessTestFunction, genomeKey):
         self.BestFitnessScore = 0
         self.TotalFitnessScore = 0
-        # print(f'Update :{self.ListGenomes}')
+
         for genome in self.ListGenomes:
-            # if genomeKey == 'Network':
-            #   decode = self.Decode(genome)
-            # else:
-            #    decode = self.Decode(genome[genomeKey])
+
             decode = self.Decode(genome)
-            fitness, info = fitnessTestFunction(decode)
-            # genome.NeuralNet['Fitness'], genome.NeuralNet['Info'] = fitnessTestFunction(decode)
-            # print( f"Update:   {genome['Fitness']} {genome['Info']}")
+            fitness, info = fitnessTestFunction(copy.deepcopy(decode))
             self.TotalFitnessScore += fitness
             self.data.append(fitness)
             genome['Fitness'] = fitness
@@ -391,19 +411,8 @@ class GA:
                 if fitness == 1:
                     self.Busy = False
 
-            # if genomeKey == 'Network':
-            # genome.NeuralNet['Fitness'] = fitness
-            # genome.NeuralNet['Info'] = info
-
-            if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
-                self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
-            # else:
-            #   genome['Fitness'] = fitness
-            #   genome['Info'] = info
-
-            if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
-                self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
-        # print(f"----{self.FittestGenomeEver['Fitness']} {self.FittestGenomeEver['Info']}")
+        if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
+            self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
 
     @staticmethod
     def CalculateFitnessScore(fitnessTestFunction, decode):
@@ -417,34 +426,38 @@ class GA:
             mumSelected = self.Selection()
             dadSelected = self.Selection()
 
+            if mumSelected['chromo'].NeuralNet['Species'][1] or dadSelected['chromo'].NeuralNet['Species'][1] > 0:
+                y = 0
+
             if not self.CrossOverCustomFunction:
                 baby1, baby2 = self.CrossOver(mumSelected, dadSelected)
             else:
-                baby1, baby2 = self.CrossOverNeuralNetwork(mumSelected, dadSelected)
+                baby1, baby2 = copy.deepcopy(self.CrossOverNeuralNetwork(mumSelected, dadSelected))
 
             if not self.MutationCustomFunction:
                 baby1 = self.Mutate(baby1)
                 baby2 = self.Mutate(baby2)
             else:
-                baby1Chromo = self.MutationCustomFunction(baby1['chromo'])
-                baby2Chromo = self.MutationCustomFunction(baby2['chromo'])
+                baby1Chromo = copy.deepcopy(self.MutationCustomFunction(baby1['chromo']))
+                baby2Chromo = copy.deepcopy(self.MutationCustomFunction(baby2['chromo']))
 
-                baby1 = {'chromo': baby1Chromo,
+                baby1 = {'chromo': copy.deepcopy(baby1Chromo),
                          'Fitness': 0,
                          'Info': []
                          }
 
-                baby2 = {'chromo': baby2Chromo,
+                baby2 = {'chromo': copy.deepcopy(baby2Chromo),
                          'Fitness': 0,
                          'Info': []
                          }
 
-            ListBabyGenomes.append(baby1)
-            ListBabyGenomes.append(baby2)
+            ListBabyGenomes.append(copy.deepcopy(baby1))
+            ListBabyGenomes.append(copy.deepcopy(baby2))
             NewBabies += 2
 
-        self.ListGenomes = ListBabyGenomes.copy()
-        self.ListGenomes.append(self.FittestGenomeEver.copy())
+        self.ListGenomes = copy.deepcopy(ListBabyGenomes)
+        self.ListGenomes.append(copy.deepcopy(self.FittestGenomeEver))
+        self.ListGenomes.append(copy.deepcopy(self.FittestGenome))
 
     def Decode(self, chromo):
 

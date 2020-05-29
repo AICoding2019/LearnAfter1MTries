@@ -8,8 +8,8 @@ import numpy as np
 
 
 class Tweann:
-    def __init__(self, numInputs, numOutputs, PopSize=100, CrossOverRate=0.7, MutationRate=0.001,
-                 addNodeMutationRate=0.001, selectionType='weightedRouletteWheel', DecodeDict=[],
+    def __init__(self, numInputs, numOutputs, PopSize=100, CrossOverRate=0.7, MutationRate=0.5,
+                 addNodeMutationRate=0.01, selectionType='weightedRouletteWheel', DecodeDict=[],
                  numGeneration=2, fitnessTestFunction=[]):
         self.numInputs = numInputs
         self.numOutputs = numOutputs
@@ -101,6 +101,8 @@ class Tweann:
         return baby1, baby2
 
     def Mutate(self, NN):
+        if NN.NeuralNet['MaxNodes'] is None:
+            y=0
         mutatedNN = copy.deepcopy(NN)
         for neuron in mutatedNN.NeuralNet['Network']:
             neuron['Weights'] = (np.array(neuron['Weights']) +
@@ -111,16 +113,17 @@ class Tweann:
                                          (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
 
             if random() < self.MutationRate:
-                neuron['Recurrent'] = choice([0, 1])
+                neuron['Recurrent'] = 0 #choice([0, 1])
 
             if random() < self.MutationRate:
-                neuron['Activation'] = choice(mutatedNN.Neuron.activationFunc)
+                neuron['Activation'] = choice(Neuron().activationFunc)
 
             if random() < self.MutationRate:
-                neuron['Enabled'] = choice([0, 1])
+                neuron['Enabled'] = 1 #choice([0, 1])
 
-        if random() < self.MutationRate:
+        if random() < self.AddNodeMutationRate:
             mutatedNN = self.MutateByAddingNode(mutatedNN)
+
 
         return mutatedNN
 
@@ -174,7 +177,7 @@ class Tweann:
         return baby1, baby2
 
     def ProgressDisplayer(self, info, fittestEver=True):
-        self.GA.FittestGenomeEver['chromo'].InternalDrawGraph()
+        self.GA.FittestGenome['chromo'].InternalDrawGraph()
 
     # print(f"----{self.GA.FittestGenomeEver['chromo'].NeuralNet['Species']}")
 
@@ -182,7 +185,7 @@ class Tweann:
         pass
 
     def InfoBoard(self, text):
-        # print(text)
+        print(text)
         pass
 
     def Epoch(self):
@@ -200,25 +203,23 @@ class Tweann:
     # @staticmethod
     def MutateByAddingNode(self, NNtoMutate):
         NN = copy.deepcopy(NNtoMutate)
-        layerToAddNeuron = randrange(NN.NeuralNet['Layers'] + 1)
-
+        layerToAddNeuron = randrange(0, NN.NeuralNet['Layers']+2)
         maxNodesInLayer = -1
         maxNodes = 0
         if self.GA.Generation == 4:
             y = 1
 
         for neuron in NN.NeuralNet['Network']:
-            print(f"---NodeNum={neuron['NodeNum']}")
+
             if maxNodes < neuron['NodeNum']:
                 maxNodes = neuron['NodeNum']
             if neuron['Layer'] == layerToAddNeuron:
                 if maxNodesInLayer < neuron['NodeNum']:
                     maxNodesInLayer = neuron['NodeNum']
-                    print(f'---maxNodesInLayer={maxNodesInLayer}-{self.GA.Generation}')
 
         addNeuron = Neuron()
-        addNeuron.neuron['ID'] = []
-        addNeuron.neuron['Weights'] = [random() for inputs in range(0, len(neuron['Weights']))]
+        addNeuron.neuron['ID'] = maxNodes + 1
+        addNeuron.neuron['Weights'] = [random() for _ in range(0, len(neuron['Weights']))]
         addNeuron.neuron['Bias'] = random()
         addNeuron.neuron['Enabled'] = 1
         addNeuron.neuron['Recurrent'] = choice([0, 1])
@@ -228,18 +229,13 @@ class Tweann:
         addNeuron.neuron['Inputs'] = neuron['Inputs']
         addNeuron.neuron['NodeNum'] = maxNodesInLayer + 1
         addNeuron.neuron['Output'] = 0
-        addNeuron.neuron['ID'] = maxNodes + 1
 
         NN.AddNeuron(addNeuron.neuron)
-        NN.NeuralNet['Species'] = [maxNodes + 1, NN.NeuralNet['Layers']]  # [ num hiddenlayers, layers]
-        NN.NeuralNet['MaxNodes'] = maxNodes + 1
-
         return NN
 
 
 if __name__ == '__main__':
     print("TweannRunner")
-
 
     def TestFitness(NN):
         # Solving XOR
@@ -250,23 +246,28 @@ if __name__ == '__main__':
         y = [0, 1, 1, 0]
         totalError = 0
         numberCorrect = 0
+        prediction= []
+        predictionBin= []
         for index in range(0, len(X)):
             NN.UpdateGraph(X[index])
-            totalError += math.fabs(y[index] - NN.NeuralNet['Output'])
-            if NN.NeuralNet['Output'] < 0.5:
+            totalError += math.fabs(y[index] - NN.NeuralNet['Output'][index])
+            if NN.NeuralNet['Output'][index] < 0.5:
                 predict = 0
             else:
                 predict = 1
 
             if y[index] == predict:
                 numberCorrect += 1
-        fitness = 1 / (1 + totalError)
+
+            prediction.append(NN.NeuralNet['Output'][index])
+            predictionBin.append(predict)
+        fitness = (numberCorrect/4 + (1 / (1 + totalError)))/2
         # NN.NeuralNet['Fitness'] = fitness
 
-        return fitness, numberCorrect
+        return fitness, [numberCorrect, NN.NeuralNet['Species'],prediction,predictionBin]
 
 
-    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=2, numGeneration=10, fitnessTestFunction=TestFitness)
+    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=100000,selectionType='rouletteWheel', fitnessTestFunction=TestFitness)
     testXOR.Evolve()
 
     while True:

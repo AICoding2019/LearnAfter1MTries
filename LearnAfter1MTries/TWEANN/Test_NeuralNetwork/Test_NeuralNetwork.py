@@ -1,7 +1,7 @@
 import unittest
 from LearnAfter1MTries.TWEANN.NeuralNetwork import NeuralNetwork, Neuron
 import math
-import numpy as np
+import copy
 
 
 class NeuralNetworkTestCase(unittest.TestCase):
@@ -105,7 +105,7 @@ class NeuralNetworkTestCase(unittest.TestCase):
         testNeuralNetwork.CreateInitialGraph()
 
         actual = testNeuralNetwork.NeuralNet['Species']
-        expected = [0, numOutputs]
+        expected = [numInputs, 0, numOutputs]
 
         self.assertEqual(expected, actual)
 
@@ -294,9 +294,9 @@ class NeuralNetworkTestCase(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_NeuralNetwork__UserDefineGraph_CheckOutput(self):
-        numInputs = 6
-        numOutputs = 4
-        hiddenLayers = [5, 3, 4]
+        numInputs = 2
+        numOutputs = 2
+        hiddenLayers = [2]
         testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
 
         actual = testNeuralNetwork.NeuralNet['Output']
@@ -322,7 +322,7 @@ class NeuralNetworkTestCase(unittest.TestCase):
         testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
 
         actual = testNeuralNetwork.NeuralNet['Species']
-        expected = hiddenLayers + [numOutputs]
+        expected = [numInputs] + hiddenLayers + [numOutputs]
 
         self.assertEqual(expected, actual)
 
@@ -624,14 +624,25 @@ class NeuralNetworkTestCase(unittest.TestCase):
         testNeuralNetwork = NeuralNetwork.UserDefineGraph(numInputs, hiddenLayers, numOutputs)
 
         newNeuron = Neuron()
-        newNeuron.neuron['Layer'] = 2
+        newNeuron.neuron['Layer'] = 0
         newNeuron.neuron['ID'] = 2
-
         testNeuralNetwork.AddNeuron(newNeuron.neuron)
-        actual = testNeuralNetwork.NeuralNet['Network'][16]
-        expected = newNeuron.neuron
-        expected['ID'] = sum(hiddenLayers) + numOutputs
-        expected['NodeNum'] = hiddenLayers[newNeuron.neuron['Layer'] - 1] + 1
+
+        newNeuron.neuron['Layer'] = 1
+        newNeuron.neuron['ID'] = 4
+        testNeuralNetwork.AddNeuron(newNeuron.neuron)
+
+        newNeuron.neuron['Layer'] = 3
+        newNeuron.neuron['ID'] = 4
+        testNeuralNetwork.AddNeuron(newNeuron.neuron)
+
+        newNeuron.neuron['Layer'] = 4
+        newNeuron.neuron['ID'] = 4
+        testNeuralNetwork.AddNeuron(newNeuron.neuron)
+
+        actual = testNeuralNetwork.NeuralNet['Species']
+        newhiddenLayers = [6, 4, 4, 1, 1]
+        expected = [numInputs] + newhiddenLayers + [numOutputs]
 
         self.assertEqual(expected, actual)
 

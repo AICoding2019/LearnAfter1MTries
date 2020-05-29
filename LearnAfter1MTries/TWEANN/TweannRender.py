@@ -19,7 +19,7 @@ class GraphWindow:
         self.all_sprites = pg.sprite.LayeredUpdates()
         self.perceptron = pg.sprite.Group()
         self.screen = pg.display.set_mode((600, 600))
-        pg.display.set_caption("Test NN render")
+        pg.display.set_caption("Test_NeuralNetwork NN render")
         self.clock = pg.time.Clock()
         pg.init()
         self.font = pg.font.Font(pg.font.get_default_font(), 20)
@@ -62,7 +62,7 @@ class Perceptron(pg.sprite.Sprite):
 
         if not Enabled:
             pg.draw.circle(self.image, DISABLEGREY, (12, 12), 12)
-        elif Activation== 'sigmoid':
+        elif Activation == 'sigmoid':
             pg.draw.circle(self.image, RED, (12, 12), 12)
         elif Activation == 'relu':
             pg.draw.circle(self.image, GREEN, (12, 12), 12)
