@@ -243,15 +243,15 @@ if __name__ == '__main__':
              [0, 1],
              [1, 0],
              [1, 1]]
-        y = [0, 1, 1, 0]
+        y = [0, 1, 1,0]
         totalError = 0
         numberCorrect = 0
         prediction= []
         predictionBin= []
         for index in range(0, len(X)):
             NN.UpdateGraph(X[index])
-            totalError += math.fabs(y[index] - NN.NeuralNet['Output'][index])
-            if NN.NeuralNet['Output'][index] < 0.5:
+            totalError += math.fabs(y[index] - NN.NeuralNet['Output'][0])
+            if NN.NeuralNet['Output'][0] < 0.5:
                 predict = 0
             else:
                 predict = 1
@@ -259,8 +259,9 @@ if __name__ == '__main__':
             if y[index] == predict:
                 numberCorrect += 1
 
-            prediction.append(NN.NeuralNet['Output'][index])
+            prediction.append(NN.NeuralNet['Output'][0])
             predictionBin.append(predict)
+            NN.NeuralNet['Output']= []
         fitness = (numberCorrect/4 + (1 / (1 + totalError)))/2
         # NN.NeuralNet['Fitness'] = fitness
 
