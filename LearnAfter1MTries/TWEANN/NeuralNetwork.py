@@ -1,10 +1,10 @@
-import math
-import json
+from math import exp, tanh
+from json import dump
 import numpy as np
 from random import random
 from random import choice
 from LearnAfter1MTries.TWEANN import TweannRender
-import copy
+from copy import deepcopy
 
 
 class Neuron:
@@ -30,7 +30,7 @@ class Neuron:
     @staticmethod
     def Sigmoid(u):
         try:
-            y = 1 / (1 + math.exp(-u))
+            y = 1 / (1 + exp(-u))
         except OverflowError:
             if u > 0:
                 y = 1
@@ -48,7 +48,7 @@ class Neuron:
 
     @staticmethod
     def Tanh(u):
-        return math.tanh(u)
+        return tanh(u)
 
     @staticmethod
     def Linear(u):
@@ -123,7 +123,7 @@ class NeuralNetwork:
             neuron['RecurrentWeight'] = random()
             neuron['Enabled'] = choice([0, 1])
             neuron['Output'] = 0
-            self.NeuralNet['Network'].append(copy.deepcopy(neuron))
+            self.NeuralNet['Network'].append(deepcopy(neuron))
 
         self.NeuralNet['Layers'] = 0
         self.NeuralNet['Species'] = [self.numInputs, 0, self.numOutputs]
@@ -146,16 +146,16 @@ class NeuralNetwork:
                 nextLayerInput.append(NeuralNetNeuron.neuron['Output'])
             else:
                 if neuron['Layer'] == layerList[index]:
-                    neuron['Inputs'] = copy.deepcopy(nextLayerInput)
+                    neuron['Inputs'] = deepcopy(nextLayerInput)
                     NeuralNetNeuron.UpdateNeuron()
                     nextnextLayerInput.append(NeuralNetNeuron.neuron['Output'])
                     Iter += 1
                     if layerList.count(layerList[index]) == Iter:
                         Iter = 0
-                        nextLayerInput = copy.deepcopy(nextnextLayerInput)
+                        nextLayerInput = deepcopy(nextnextLayerInput)
                         nextnextLayerInput = []
                 if neuron['Layer'] == -1:
-                    self.NeuralNet['Output'].append(copy.deepcopy(NeuralNetNeuron.neuron['Output']))
+                    self.NeuralNet['Output'].append(deepcopy(NeuralNetNeuron.neuron['Output']))
 
     def FindNeuronsInLayer(self, layer):
         neuronInLayer = []
@@ -165,7 +165,7 @@ class NeuralNetwork:
         return neuronInLayer
 
     def AddNeuron(self, newNeuron):
-        addedNeuron = copy.deepcopy(newNeuron)
+        addedNeuron = deepcopy(newNeuron)
         newNodeNum = -1
         newNodeID = -1
 
@@ -193,7 +193,7 @@ class NeuralNetwork:
 
         self.NeuralNet['MaxNodes'] = max(self.NeuralNet['Species'])
 
-        self.NeuralNet['Network'].append(copy.deepcopy(addedNeuron))
+        self.NeuralNet['Network'].append(deepcopy(addedNeuron))
 
     def findMaxNodes(self):
         maxNodes = -1
@@ -226,7 +226,7 @@ class NeuralNetwork:
                 neuron['Output'] = 0
                 neuron['NodeNum'] = nodeNum
                 ID += 1
-                network.NeuralNet['Network'].append(copy.deepcopy(neuron))
+                network.NeuralNet['Network'].append(deepcopy(neuron))
 
         for outs in range(0, numOutputs):
             neuron['Layer'] = -1
@@ -240,7 +240,7 @@ class NeuralNetwork:
             neuron['Output'] = 0
             neuron['NodeNum'] = outs
             ID += 1
-            network.NeuralNet['Network'].append(copy.deepcopy(neuron))
+            network.NeuralNet['Network'].append(deepcopy(neuron))
 
         network.NeuralNet['Layers'] = len(hiddenLayers) + 1
         network.NeuralNet['Species'] = species
@@ -279,7 +279,7 @@ class NeuralNetwork:
 
     def LogGraph(self, directory, filename):
         with open(directory + filename + '.json', 'w') as json_file:
-            json.dump(self.NeuralNet, json_file, indent=4)
+            dump(self.NeuralNet, json_file, indent=4)
 
 
 if __name__ == '__main__':

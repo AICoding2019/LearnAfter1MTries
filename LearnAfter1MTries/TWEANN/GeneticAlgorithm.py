@@ -1,10 +1,10 @@
 import random as rd
-from random import random
+#from random import random
 from random import randint
-import math
+from math import ceil
 import matplotlib.pyplot as plt
-import numpy as np
-import copy
+#import numpy as np
+from copy import deepcopy
 from LearnAfter1MTries.TWEANN.NeuralNetwork import *
 
 
@@ -326,8 +326,8 @@ class GA:
 
         baby1Chromo.NeuralNet['MaxNodes'] = mumNetwork.NeuralNet['MaxNodes']
         baby2Chromo.NeuralNet['MaxNodes'] = dadNetwork.NeuralNet['MaxNodes']
-        baby1Chromo.NeuralNet['Species'] = copy.deepcopy(mumNetwork.NeuralNet['Species'])
-        baby2Chromo.NeuralNet['Species'] = copy.deepcopy(dadNetwork.NeuralNet['Species'])
+        baby1Chromo.NeuralNet['Species'] = deepcopy(mumNetwork.NeuralNet['Species'])
+        baby2Chromo.NeuralNet['Species'] = deepcopy(dadNetwork.NeuralNet['Species'])
 
         baby1 = {'chromo': baby1Chromo,
                  'Fitness': 0,
@@ -379,11 +379,11 @@ class GA:
 
         for index, genome in enumerate(self.ListGenomes):
             # if self.genomeKey == 'Network':
-            #    Slice = math.ceil((genome.NeuralNet['Fitness'] * 100) / self.TotalFitnessScore)
+            #    Slice = ceil((genome.NeuralNet['Fitness'] * 100) / self.TotalFitnessScore)
             # else:
-            #     Slice = math.ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
+            #     Slice = ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
 
-            Slice = math.ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
+            Slice = ceil((genome['Fitness'] * 100) / self.TotalFitnessScore)
             for i in range(0, Slice):
                 RouletteWheel.append(index)
 
@@ -398,7 +398,7 @@ class GA:
         for genome in self.ListGenomes:
 
             decode = self.Decode(genome)
-            fitness, info = fitnessTestFunction(copy.deepcopy(decode))
+            fitness, info = fitnessTestFunction(deepcopy(decode))
             self.TotalFitnessScore += fitness
             self.data.append(fitness)
             genome['Fitness'] = fitness
@@ -406,13 +406,13 @@ class GA:
 
             if fitness > self.BestFitnessScore:
                 self.BestFitnessScore = fitness
-                self.FittestGenome = copy.deepcopy(genome)
+                self.FittestGenome = deepcopy(genome)
 
                 if fitness == 1:
                     self.Busy = False
 
         if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
-            self.FittestGenomeEver = copy.deepcopy(self.FittestGenome)
+            self.FittestGenomeEver = deepcopy(self.FittestGenome)
 
     @staticmethod
     def CalculateFitnessScore(fitnessTestFunction, decode):
@@ -432,32 +432,32 @@ class GA:
             if not self.CrossOverCustomFunction:
                 baby1, baby2 = self.CrossOver(mumSelected, dadSelected)
             else:
-                baby1, baby2 = copy.deepcopy(self.CrossOverNeuralNetwork(mumSelected, dadSelected))
+                baby1, baby2 = deepcopy(self.CrossOverNeuralNetwork(mumSelected, dadSelected))
 
             if not self.MutationCustomFunction:
                 baby1 = self.Mutate(baby1)
                 baby2 = self.Mutate(baby2)
             else:
-                baby1Chromo = copy.deepcopy(self.MutationCustomFunction(baby1['chromo']))
-                baby2Chromo = copy.deepcopy(self.MutationCustomFunction(baby2['chromo']))
+                baby1Chromo = deepcopy(self.MutationCustomFunction(baby1['chromo']))
+                baby2Chromo = deepcopy(self.MutationCustomFunction(baby2['chromo']))
 
-                baby1 = {'chromo': copy.deepcopy(baby1Chromo),
+                baby1 = {'chromo': deepcopy(baby1Chromo),
                          'Fitness': 0,
                          'Info': []
                          }
 
-                baby2 = {'chromo': copy.deepcopy(baby2Chromo),
+                baby2 = {'chromo': deepcopy(baby2Chromo),
                          'Fitness': 0,
                          'Info': []
                          }
 
-            ListBabyGenomes.append(copy.deepcopy(baby1))
-            ListBabyGenomes.append(copy.deepcopy(baby2))
+            ListBabyGenomes.append(deepcopy(baby1))
+            ListBabyGenomes.append(deepcopy(baby2))
             NewBabies += 2
 
-        self.ListGenomes = copy.deepcopy(ListBabyGenomes)
-        self.ListGenomes.append(copy.deepcopy(self.FittestGenomeEver))
-        self.ListGenomes.append(copy.deepcopy(self.FittestGenome))
+        self.ListGenomes = deepcopy(ListBabyGenomes)
+        self.ListGenomes.append(deepcopy(self.FittestGenomeEver))
+        self.ListGenomes.append(deepcopy(self.FittestGenome))
 
     def Decode(self, chromo):
 

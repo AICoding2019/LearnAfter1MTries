@@ -24,21 +24,23 @@ def get_wav(file_name, nsamples=16000):
 
 
 def meanAbsoluteError(y, x):
-    return sum(np.array(y) - np.array(x)) / len(y)
+    return sum(np.fabs(np.array(y) - np.array(x))) / len(y)
 
 
 def TestFitness(NN):
 
     numberCorrect = 0
     shuffle(data['training'])
-    MAE = 1E6
-    for wavFileName in data['training']:
+
+    totalError =0
+    for wavFileName in data['training'][0:3]:
         X = get_wav(path+'/DataSet/' + wavFileName)
         NN.UpdateGraph(X)
 
         label = wavFileName.split('/')[1]
         y = data['OneHotEncode'][label]
         MAE = meanAbsoluteError(y, NN.NeuralNet['Output'])
+        totalError += MAE
 
         prediction = np.argmax(NN.NeuralNet['Output'])
         actual = np.argmax(y)
@@ -48,14 +50,14 @@ def TestFitness(NN):
 
         NN.NeuralNet['Output'] = []
 
-    fitness = (numberCorrect / len(data['training']) + (1 / (1 + MAE))) / 2
+    fitness = (numberCorrect / 4 + (1 / (1 + totalError))) / 2
     NN.NeuralNet['Fitness'] = fitness
 
-    return fitness, [numberCorrect, NN.NeuralNet['Species']]
+    return fitness, [numberCorrect, totalError, NN.NeuralNet['Species']]
 
 
-testSpeechRecog = Tweann(numInputs=nsamples, numOutputs=classLength, PopSize=10, numGeneration=100000,
-                         selectionType='rouletteWheel', fitnessTestFunction=TestFitness)
+testSpeechRecog = Tweann(numInputs=nsamples, numOutputs=classLength, PopSize=50, numGeneration=100000,
+                         selectionType='rouletteWheel', fitnessTestFunction=TestFitness,displayer=False)
 testSpeechRecog.Evolve()
 
 while True:

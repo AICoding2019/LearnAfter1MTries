@@ -1,5 +1,5 @@
 import pygame as pg
-from LearnAfter1MTries.EventManager.EventManager import EventManager
+#from LearnAfter1MTries.EventManager.EventManager import EventManager
 
 # define some colors (R, G, B)
 WHITE = (255, 255, 255)

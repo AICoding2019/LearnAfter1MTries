@@ -1,16 +1,17 @@
-from LearnAfter1MTries.TWEANN.GeneticAlgorithm import GA
-from LearnAfter1MTries.TWEANN.NeuralNetwork import NeuralNetwork, Neuron
+#from LearnAfter1MTries.TWEANN.GeneticAlgorithm import GA
+#from LearnAfter1MTries.TWEANN.NeuralNetwork import NeuralNetwork, Neuron
 from LearnAfter1MTries.TWEANN.GeneticAlgorithm import *
 from random import random
 from random import choice
 from random import randrange
+from math import fabs
 import numpy as np
 
 
 class Tweann:
     def __init__(self, numInputs, numOutputs, PopSize=100, CrossOverRate=0.7, MutationRate=0.5,
                  addNodeMutationRate=0.01, selectionType='weightedRouletteWheel', DecodeDict=[],
-                 numGeneration=2, fitnessTestFunction=[]):
+                 numGeneration=2, fitnessTestFunction=[], displayer=True):
         self.numInputs = numInputs
         self.numOutputs = numOutputs
         self.PopSize = PopSize
@@ -21,6 +22,7 @@ class Tweann:
         self.numGeneration = numGeneration
         self.fitnessTest = fitnessTestFunction
         self.AddNodeMutationRate = addNodeMutationRate
+        self.displayer = displayer
 
         self.GA = GA(PopSize=self.PopSize,
                      CrossOverRate=self.CrossOverRate,
@@ -35,7 +37,7 @@ class Tweann:
                      crossOverCustomFunction=self.CrossOver,
                      setPopFlag=True,
                      stringMutate='swap',
-                     progressGen=self.ProgressDisplayer,
+                     progressGen= self.ProgressDisplayer,
                      progressOverall=self.ProgressOverallDisplayer,
                      infoBoard=self.InfoBoard
                      )
@@ -102,8 +104,8 @@ class Tweann:
 
     def Mutate(self, NN):
         if NN.NeuralNet['MaxNodes'] is None:
-            y=0
-        mutatedNN = copy.deepcopy(NN)
+            y = 0
+        mutatedNN = deepcopy(NN)
         for neuron in mutatedNN.NeuralNet['Network']:
             neuron['Weights'] = (np.array(neuron['Weights']) +
                                  (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
@@ -113,17 +115,16 @@ class Tweann:
                                          (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
 
             if random() < self.MutationRate:
-                neuron['Recurrent'] = 0 #choice([0, 1])
+                neuron['Recurrent'] = 0  # choice([0, 1])
 
             if random() < self.MutationRate:
                 neuron['Activation'] = choice(Neuron().activationFunc)
 
             if random() < self.MutationRate:
-                neuron['Enabled'] = 1 #choice([0, 1])
+                neuron['Enabled'] = 1  # choice([0, 1])
 
         if random() < self.AddNodeMutationRate:
             mutatedNN = self.MutateByAddingNode(mutatedNN)
-
 
         return mutatedNN
 
@@ -177,7 +178,10 @@ class Tweann:
         return baby1, baby2
 
     def ProgressDisplayer(self, info, fittestEver=True):
-        self.GA.FittestGenome['chromo'].InternalDrawGraph()
+        if self.displayer:
+            self.GA.FittestGenome['chromo'].InternalDrawGraph()
+        else:
+            pass
 
     # print(f"----{self.GA.FittestGenomeEver['chromo'].NeuralNet['Species']}")
 
@@ -202,8 +206,8 @@ class Tweann:
 
     # @staticmethod
     def MutateByAddingNode(self, NNtoMutate):
-        NN = copy.deepcopy(NNtoMutate)
-        layerToAddNeuron = randrange(0, NN.NeuralNet['Layers']+2)
+        NN = deepcopy(NNtoMutate)
+        layerToAddNeuron = randrange(0, NN.NeuralNet['Layers'] + 2)
         maxNodesInLayer = -1
         maxNodes = 0
         if self.GA.Generation == 4:
@@ -237,20 +241,21 @@ class Tweann:
 if __name__ == '__main__':
     print("TweannRunner")
 
+
     def TestFitness(NN):
         # Solving XOR
         X = [[0, 0],
              [0, 1],
              [1, 0],
              [1, 1]]
-        y = [0, 1, 1,0]
+        y = [0, 1, 1, 0]
         totalError = 0
         numberCorrect = 0
-        prediction= []
-        predictionBin= []
+        prediction = []
+        predictionBin = []
         for index in range(0, len(X)):
             NN.UpdateGraph(X[index])
-            totalError += math.fabs(y[index] - NN.NeuralNet['Output'][0])
+            totalError += fabs(y[index] - NN.NeuralNet['Output'][0])
             if NN.NeuralNet['Output'][0] < 0.5:
                 predict = 0
             else:
@@ -261,14 +266,15 @@ if __name__ == '__main__':
 
             prediction.append(NN.NeuralNet['Output'][0])
             predictionBin.append(predict)
-            NN.NeuralNet['Output']= []
-        fitness = (numberCorrect/4 + (1 / (1 + totalError)))/2
+            NN.NeuralNet['Output'] = []
+        fitness = (numberCorrect / 4 + (1 / (1 + totalError))) / 2
         # NN.NeuralNet['Fitness'] = fitness
 
-        return fitness, [numberCorrect, NN.NeuralNet['Species'],prediction,predictionBin]
+        return fitness, [numberCorrect, NN.NeuralNet['Species'], prediction, predictionBin]
 
 
-    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=100000,selectionType='rouletteWheel', fitnessTestFunction=TestFitness)
+    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=100000, selectionType='rouletteWheel',
+                     fitnessTestFunction=TestFitness)
     testXOR.Evolve()
 
     while True:
