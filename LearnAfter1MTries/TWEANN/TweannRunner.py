@@ -6,6 +6,7 @@ from random import choice
 from random import randrange
 from math import fabs
 import numpy as np
+from copy import deepcopy
 
 
 class Tweann:
@@ -50,6 +51,7 @@ class Tweann:
             self.NeatListGenomes.append(net)
 
         self.GA.setStartPopulation(self.NeatListGenomes)
+        self.NeatListGenomes = []
 
     def GenerateBabies(self, mum, dad):
         maxMumNodeNum = -1
@@ -103,9 +105,7 @@ class Tweann:
         return baby1, baby2
 
     def Mutate(self, NN):
-        if NN.NeuralNet['MaxNodes'] is None:
-            y = 0
-        mutatedNN = deepcopy(NN)
+        mutatedNN = NN
         for neuron in mutatedNN.NeuralNet['Network']:
             neuron['Weights'] = (np.array(neuron['Weights']) +
                                  (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
@@ -206,7 +206,7 @@ class Tweann:
 
     # @staticmethod
     def MutateByAddingNode(self, NNtoMutate):
-        NN = deepcopy(NNtoMutate)
+        NN =deepcopy(NNtoMutate)
         layerToAddNeuron = randrange(0, NN.NeuralNet['Layers'] + 2)
         maxNodesInLayer = -1
         maxNodes = 0
@@ -273,9 +273,9 @@ if __name__ == '__main__':
         return fitness, [numberCorrect, NN.NeuralNet['Species'], prediction, predictionBin]
 
 
-    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=100000, selectionType='rouletteWheel',
+    testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=60, selectionType='rouletteWheel',
                      fitnessTestFunction=TestFitness)
     testXOR.Evolve()
 
-    while True:
-        pass
+    #while True:
+    #    pass

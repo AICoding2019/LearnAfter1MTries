@@ -4,7 +4,7 @@ from random import randint
 from math import ceil
 import matplotlib.pyplot as plt
 #import numpy as np
-from copy import deepcopy
+#from copy import deepcopy
 from LearnAfter1MTries.TWEANN.NeuralNetwork import *
 
 
@@ -326,8 +326,8 @@ class GA:
 
         baby1Chromo.NeuralNet['MaxNodes'] = mumNetwork.NeuralNet['MaxNodes']
         baby2Chromo.NeuralNet['MaxNodes'] = dadNetwork.NeuralNet['MaxNodes']
-        baby1Chromo.NeuralNet['Species'] = deepcopy(mumNetwork.NeuralNet['Species'])
-        baby2Chromo.NeuralNet['Species'] = deepcopy(dadNetwork.NeuralNet['Species'])
+        baby1Chromo.NeuralNet['Species'] = mumNetwork.NeuralNet['Species']
+        baby2Chromo.NeuralNet['Species'] = dadNetwork.NeuralNet['Species']
 
         baby1 = {'chromo': baby1Chromo,
                  'Fitness': 0,
@@ -398,7 +398,7 @@ class GA:
         for genome in self.ListGenomes:
 
             decode = self.Decode(genome)
-            fitness, info = fitnessTestFunction(deepcopy(decode))
+            fitness, info = fitnessTestFunction(decode)
             self.TotalFitnessScore += fitness
             self.data.append(fitness)
             genome['Fitness'] = fitness
@@ -406,13 +406,13 @@ class GA:
 
             if fitness > self.BestFitnessScore:
                 self.BestFitnessScore = fitness
-                self.FittestGenome = deepcopy(genome)
+                self.FittestGenome = genome
 
                 if fitness == 1:
                     self.Busy = False
 
         if self.FittestGenome['Fitness'] > self.FittestGenomeEver['Fitness']:
-            self.FittestGenomeEver = deepcopy(self.FittestGenome)
+            self.FittestGenomeEver = self.FittestGenome
 
     @staticmethod
     def CalculateFitnessScore(fitnessTestFunction, decode):
@@ -421,43 +421,41 @@ class GA:
     def GenerateBabies(self):
         NewBabies = 0
         ListBabyGenomes = []
+        #self.ListGenomes = []
 
         while NewBabies < self.PopSize:
             mumSelected = self.Selection()
             dadSelected = self.Selection()
 
-            if mumSelected['chromo'].NeuralNet['Species'][1] or dadSelected['chromo'].NeuralNet['Species'][1] > 0:
-                y = 0
-
             if not self.CrossOverCustomFunction:
                 baby1, baby2 = self.CrossOver(mumSelected, dadSelected)
             else:
-                baby1, baby2 = deepcopy(self.CrossOverNeuralNetwork(mumSelected, dadSelected))
+                baby1, baby2 = self.CrossOverNeuralNetwork(mumSelected, dadSelected)
 
             if not self.MutationCustomFunction:
                 baby1 = self.Mutate(baby1)
                 baby2 = self.Mutate(baby2)
             else:
-                baby1Chromo = deepcopy(self.MutationCustomFunction(baby1['chromo']))
-                baby2Chromo = deepcopy(self.MutationCustomFunction(baby2['chromo']))
+                baby1Chromo = self.MutationCustomFunction(baby1['chromo'])
+                baby2Chromo = self.MutationCustomFunction(baby2['chromo'])
 
-                baby1 = {'chromo': deepcopy(baby1Chromo),
+                baby1 = {'chromo': baby1Chromo,
                          'Fitness': 0,
                          'Info': []
                          }
 
-                baby2 = {'chromo': deepcopy(baby2Chromo),
+                baby2 = {'chromo': baby2Chromo,
                          'Fitness': 0,
                          'Info': []
                          }
 
-            ListBabyGenomes.append(deepcopy(baby1))
-            ListBabyGenomes.append(deepcopy(baby2))
+            ListBabyGenomes.append(baby1)
+            ListBabyGenomes.append(baby2)
             NewBabies += 2
 
-        self.ListGenomes = deepcopy(ListBabyGenomes)
-        self.ListGenomes.append(deepcopy(self.FittestGenomeEver))
-        self.ListGenomes.append(deepcopy(self.FittestGenome))
+        self.ListGenomes = ListBabyGenomes
+        self.ListGenomes.append(self.FittestGenomeEver)
+        self.ListGenomes.append(self.FittestGenome)
 
     def Decode(self, chromo):
 

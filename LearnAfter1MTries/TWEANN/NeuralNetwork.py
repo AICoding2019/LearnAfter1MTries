@@ -4,7 +4,7 @@ import numpy as np
 from random import random
 from random import choice
 from LearnAfter1MTries.TWEANN import TweannRender
-from copy import deepcopy
+#from copy import deepcopy
 
 
 class Neuron:
@@ -54,10 +54,12 @@ class Neuron:
     def Linear(u):
         return u
 
-    def UpdateNeuron(self):
-        inputs = np.array(self.neuron['Inputs'])
+    def UpdateNeuron(self, nodeInputs):
+        #inputs = np.array(self.neuron['Inputs'])
+        inputs = np.array(nodeInputs)
         weights = np.array(self.neuron['Weights'])
-        diff = len(self.neuron['Inputs']) - len(self.neuron['Weights'])
+        #diff = len(self.neuron['Inputs']) - len(self.neuron['Weights'])
+        diff = len(nodeInputs) - len(self.neuron['Weights'])
 
         # Padding is being done so that inputs and weights vector lengths dont have to be compatible
         if diff > 0:
@@ -123,7 +125,7 @@ class NeuralNetwork:
             neuron['RecurrentWeight'] = random()
             neuron['Enabled'] = choice([0, 1])
             neuron['Output'] = 0
-            self.NeuralNet['Network'].append(deepcopy(neuron))
+            self.NeuralNet['Network'].append(neuron)
 
         self.NeuralNet['Layers'] = 0
         self.NeuralNet['Species'] = [self.numInputs, 0, self.numOutputs]
@@ -141,21 +143,21 @@ class NeuralNetwork:
             NeuralNetNeuron = Neuron()
             NeuralNetNeuron.neuron = neuron
             if neuron['Layer'] == 0:
-                neuron['Inputs'] = NetInputs
-                NeuralNetNeuron.UpdateNeuron()
+                #neuron['Inputs'] = NetInputs
+                NeuralNetNeuron.UpdateNeuron(NetInputs)
                 nextLayerInput.append(NeuralNetNeuron.neuron['Output'])
             else:
                 if neuron['Layer'] == layerList[index]:
-                    neuron['Inputs'] = deepcopy(nextLayerInput)
-                    NeuralNetNeuron.UpdateNeuron()
+                    #neuron['Inputs'] = deepcopy(nextLayerInput)
+                    NeuralNetNeuron.UpdateNeuron(nextLayerInput)
                     nextnextLayerInput.append(NeuralNetNeuron.neuron['Output'])
                     Iter += 1
                     if layerList.count(layerList[index]) == Iter:
                         Iter = 0
-                        nextLayerInput = deepcopy(nextnextLayerInput)
+                        nextLayerInput = nextnextLayerInput
                         nextnextLayerInput = []
                 if neuron['Layer'] == -1:
-                    self.NeuralNet['Output'].append(deepcopy(NeuralNetNeuron.neuron['Output']))
+                    self.NeuralNet['Output'].append(NeuralNetNeuron.neuron['Output'])
 
     def FindNeuronsInLayer(self, layer):
         neuronInLayer = []
@@ -165,7 +167,7 @@ class NeuralNetwork:
         return neuronInLayer
 
     def AddNeuron(self, newNeuron):
-        addedNeuron = deepcopy(newNeuron)
+        addedNeuron =newNeuron
         newNodeNum = -1
         newNodeID = -1
 
@@ -193,7 +195,7 @@ class NeuralNetwork:
 
         self.NeuralNet['MaxNodes'] = max(self.NeuralNet['Species'])
 
-        self.NeuralNet['Network'].append(deepcopy(addedNeuron))
+        self.NeuralNet['Network'].append(addedNeuron)
 
     def findMaxNodes(self):
         maxNodes = -1
@@ -226,7 +228,7 @@ class NeuralNetwork:
                 neuron['Output'] = 0
                 neuron['NodeNum'] = nodeNum
                 ID += 1
-                network.NeuralNet['Network'].append(deepcopy(neuron))
+                network.NeuralNet['Network'].append(neuron)
 
         for outs in range(0, numOutputs):
             neuron['Layer'] = -1
@@ -240,7 +242,7 @@ class NeuralNetwork:
             neuron['Output'] = 0
             neuron['NodeNum'] = outs
             ID += 1
-            network.NeuralNet['Network'].append(deepcopy(neuron))
+            network.NeuralNet['Network'].append(neuron)
 
         network.NeuralNet['Layers'] = len(hiddenLayers) + 1
         network.NeuralNet['Species'] = species
