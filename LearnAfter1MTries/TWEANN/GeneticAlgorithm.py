@@ -123,22 +123,25 @@ def CrossOverRandomSwapPoint(mum, dad, chromoLength, crossOverRate):
     baby1 = mum.copy()
     baby2 = dad.copy()
 
-    # just return parents as offspring dependent on the rate
-    # or if parents are the same
-    if random() > crossOverRate:  # or mum['chromo'] == dad['chromo']:
+    if len(baby1['chromo'] ) != 0 or len(baby2['chromo'] ) != 0:
+        # just return parents as offspring dependent on the rate
+        # or if parents are the same
+        if random() > crossOverRate:  # or mum['chromo'] == dad['chromo']:
+            return baby1, baby2
+
+        crossoverPoint = randint(1, chromoLength)
+
+        if len(mum['chromo'][0:crossoverPoint]) == 0 or len(dad['chromo'][0:crossoverPoint]) == 0:
+            return baby1, baby2
+        else:
+            baby1['chromo'] = (mum['chromo'][0:crossoverPoint]).copy() + (
+                dad['chromo'][crossoverPoint:chromoLength]).copy()
+            baby2['chromo'] = (dad['chromo'][0:crossoverPoint]).copy() + (
+                mum['chromo'][crossoverPoint:chromoLength]).copy()
+            return baby1, baby2
+    else:
+       # print("Empty baby found!!")
         return baby1, baby2
-
-    crossoverPoint = randint(0, chromoLength)
-
-    if len(mum['chromo'][0:crossoverPoint])== 0 or len(dad['chromo'][0:crossoverPoint])== 0:
-        return baby1, baby2
-
-    baby1['chromo'] = (mum['chromo'][0:crossoverPoint]).copy() + (
-        dad['chromo'][crossoverPoint:chromoLength]).copy()
-    baby2['chromo'] = (dad['chromo'][0:crossoverPoint]).copy() + (
-        mum['chromo'][crossoverPoint:chromoLength]).copy()
-
-    return baby1, baby2
 
 
 def DecodeRealNumber(chromo, DecodeDict):
@@ -287,59 +290,65 @@ class GA:
                 return self.MutateChromeSwap(chromo)
 
     def CrossOverNeuralNetwork(self, mumChrome, dadChrome):
+
         mumNetwork = mumChrome['chromo']
         dadNetwork = dadChrome['chromo']
 
-        mumLayerList =mumNetwork.NeuralNet['Species'][1:]
-        dadLayerList = dadNetwork.NeuralNet['Species'][1:]
-        if len(mumLayerList) > len(dadLayerList):
-            maxLayerList =  mumLayerList
-        else:
-            maxLayerList = dadLayerList
-
-        numInputs = mumNetwork.numInputs
-        numOutputs = mumNetwork.numInputs
-        baby1Chromo = NeuralNetwork(numInputs, numOutputs)
-        baby2Chromo = NeuralNetwork(numInputs, numOutputs)
-
-        mumForCrossOver = dict(chromo=[])
-        dadForCrossOver = dict(chromo=[])
-        for index, element in enumerate(maxLayerList):
-            if index < len(maxLayerList)-1:
-                mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(index)
-                dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(index)
-                #if len(mumForCrossOver['chromo']) != 0 and len(dadForCrossOver['chromo']) != 0:
-                self.ChromoLength = element
-                if element ==2:
-                    y=0
-                baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
-
-                baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network']+baby1Layer['chromo']
-                baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network']+baby2Layer['chromo']
+        if len(mumNetwork.NeuralNet['Species']) != 0 or len(dadNetwork.NeuralNet['Species']) !=0:
+            mumLayerList =mumNetwork.NeuralNet['Species'][1:]
+            dadLayerList = dadNetwork.NeuralNet['Species'][1:]
+            if len(mumLayerList) > len(dadLayerList):
+                maxLayerList =  mumLayerList
             else:
-                mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(-1)
-                dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(-1)
-                self.ChromoLength = element
-                baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
-                baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network'] + baby1Layer['chromo']
-                baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network'] + baby2Layer['chromo']
+                maxLayerList = dadLayerList
 
-        baby1Chromo.NeuralNet['MaxNodes'] = mumNetwork.NeuralNet['MaxNodes']
-        baby2Chromo.NeuralNet['MaxNodes'] = dadNetwork.NeuralNet['MaxNodes']
-        baby1Chromo.NeuralNet['Species'] = mumNetwork.NeuralNet['Species']
-        baby2Chromo.NeuralNet['Species'] = dadNetwork.NeuralNet['Species']
+            numInputs = mumNetwork.numInputs
+            numOutputs = mumNetwork.numInputs
+            baby1Chromo = NeuralNetwork(numInputs, numOutputs)
+            baby2Chromo = NeuralNetwork(numInputs, numOutputs)
 
-        baby1 = {'chromo': baby1Chromo,
-                 'Fitness': 0,
-                 'Info': []
-                 }
+            mumForCrossOver = dict(chromo=[])
+            dadForCrossOver = dict(chromo=[])
+            for index, element in enumerate(maxLayerList):
+                if index < len(maxLayerList)-1:
+                    mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(index)
+                    dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(index)
+                    #if len(mumForCrossOver['chromo']) != 0 and len(dadForCrossOver['chromo']) != 0:
+                    self.ChromoLength = element
+                    if element != 0:
+                        baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
+                        baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network']+baby1Layer['chromo']
+                        baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network']+baby2Layer['chromo']
+                else:
+                    mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(-1)
+                    dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(-1)
+                    self.ChromoLength = element
+                    baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
+                    baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network'] + baby1Layer['chromo']
+                    baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network'] + baby2Layer['chromo']
 
-        baby2 = {'chromo': baby2Chromo,
-                 'Fitness': 0,
-                 'Info': []
-                 }
+            baby1Chromo.NeuralNet['MaxNodes'] = mumNetwork.NeuralNet['MaxNodes']
+            baby2Chromo.NeuralNet['MaxNodes'] = dadNetwork.NeuralNet['MaxNodes']
+            baby1Chromo.NeuralNet['Species'] = mumNetwork.NeuralNet['Species']
+            baby2Chromo.NeuralNet['Species'] = dadNetwork.NeuralNet['Species']
+
+            baby1 = {'chromo': baby1Chromo,
+                     'Fitness': 0,
+                     'Info': []
+                     }
+
+            baby2 = {'chromo': baby2Chromo,
+                     'Fitness': 0,
+                     'Info': []
+                     }
+
+        else:
+            #print('empty mum or dad')
+            baby1 = choice(self.ListGenomes)
+            baby2 = choice(self.ListGenomes)
 
         return baby1, baby2
+
 
     def CrossOver(self, mumForCrossOver, dadForCrossOver):
 
@@ -359,7 +368,7 @@ class GA:
             return self.WeightedRouletteWheelSelection()
 
     def RouletteWheelSelection(self):
-        selectedGenome = []
+        selectedGenome = self.ListGenomes[0]
         Slice = random() * self.TotalFitnessScore
 
         total = 0.0
@@ -367,10 +376,11 @@ class GA:
         for genome in self.ListGenomes:
             total += genome['Fitness']
 
-            if total > Slice:
+            if total >= Slice:
                 selectedGenome = genome.copy()
                 break
-
+        if len(selectedGenome) == 0:
+            y = 0
         return selectedGenome
 
     def WeightedRouletteWheelSelection(self):
@@ -427,6 +437,9 @@ class GA:
             mumSelected = self.Selection()
             dadSelected = self.Selection()
 
+            if len(mumSelected) == 0 or len(dadSelected) == 0:
+                y=0
+
             if not self.CrossOverCustomFunction:
                 baby1, baby2 = self.CrossOver(mumSelected, dadSelected)
             else:
@@ -479,7 +492,7 @@ class GA:
             self.Generation += 1
 
             self.InfoBoard()
-            self.PlotData()
+            #self.PlotData()
 
             if self.Generation == 3:
                 pass
