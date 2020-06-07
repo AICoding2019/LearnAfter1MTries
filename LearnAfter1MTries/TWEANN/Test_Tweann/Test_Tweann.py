@@ -51,8 +51,6 @@ class TweannTestCase(unittest.TestCase):
         testXOR = Tweann(numInputs=2, numOutputs=1, PopSize=1000, numGeneration=60, selectionType='rouletteWheel',
                          fitnessTestFunction=TestFitness)
         testXOR.Evolve()
-
-
         self.assertEqual(True, True)
 
 
