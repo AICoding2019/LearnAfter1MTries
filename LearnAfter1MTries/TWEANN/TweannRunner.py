@@ -207,11 +207,14 @@ class Tweann:
     # @staticmethod
     def MutateByAddingNode(self, NNtoMutate):
         NN =deepcopy(NNtoMutate)
-        layerToAddNeuron = randrange(0, NN.NeuralNet['Layers'] + 2)
+        if NN.NeuralNet['Species'][1] == 0:
+            layerToAddNeuron = 0
+        else:
+            layerToAddNeuron = randrange(0, NN.NeuralNet['Layers'] + 2)
+
         maxNodesInLayer = -1
         maxNodes = 0
-        if self.GA.Generation == 4:
-            y = 1
+
 
         for neuron in NN.NeuralNet['Network']:
 

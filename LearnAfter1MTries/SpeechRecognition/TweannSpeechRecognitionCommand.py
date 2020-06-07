@@ -5,7 +5,7 @@ from scipy.io import wavfile
 import numpy as np
 
 nsamples = 16000
-path = '/home/a/Downloads/speech_commands'
+path = '/home/azureuser/Downloads/data/speech_commands/'
 dataSetName = 'SpeechDataSet.json'
 
 with open(path + '/' + dataSetName, 'r') as json_file:
@@ -33,7 +33,7 @@ def TestFitness(NN):
     shuffle(data['training'])
 
     totalError =0
-    for wavFileName in data['training'][0:3]:
+    for wavFileName in data['training'][0:10]:
         X = get_wav(path+'/DataSet/' + wavFileName)
         NN.UpdateGraph(X)
 
@@ -50,13 +50,13 @@ def TestFitness(NN):
 
         NN.NeuralNet['Output'] = []
 
-    fitness = (numberCorrect / 4 + (1 / (1 + totalError))) / 2
+    fitness = (10*numberCorrect + (1 / (1 + totalError))) / 11
     NN.NeuralNet['Fitness'] = fitness
 
     return fitness, [numberCorrect, totalError, NN.NeuralNet['Species']]
 
 
-testSpeechRecog = Tweann(numInputs=nsamples, numOutputs=classLength, PopSize=50, numGeneration=100000,
+testSpeechRecog = Tweann(numInputs=nsamples, numOutputs=classLength, PopSize=100, numGeneration=100000,
                          selectionType='rouletteWheel', fitnessTestFunction=TestFitness,displayer=False)
 testSpeechRecog.Evolve()
 
