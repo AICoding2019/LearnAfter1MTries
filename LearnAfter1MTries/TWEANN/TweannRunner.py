@@ -1,5 +1,5 @@
-#from LearnAfter1MTries.TWEANN.GeneticAlgorithm import GA
-#from LearnAfter1MTries.TWEANN.NeuralNetwork import NeuralNetwork, Neuron
+# from LearnAfter1MTries.TWEANN.GeneticAlgorithm import GA
+# from LearnAfter1MTries.TWEANN.NeuralNetwork import NeuralNetwork, Neuron
 from LearnAfter1MTries.TWEANN.GeneticAlgorithm import *
 from random import random
 from random import choice
@@ -7,12 +7,17 @@ from random import randrange
 from math import fabs
 import numpy as np
 from copy import deepcopy
+from os import mkdir, path
+from shutil import rmtree
+import json
+import rapidjson
+import orjson
 
 
 class Tweann:
-    def __init__(self, numInputs, numOutputs, PopSize=100, CrossOverRate=0.7, MutationRate=0.5,
-                 addNodeMutationRate=0.01, selectionType='weightedRouletteWheel', DecodeDict=[],
-                 numGeneration=2, fitnessTestFunction=[], displayer=True):
+    def __init__(self, numInputs, numOutputs, PopSize=100, CrossOverRate=0.7, MutationRate=0.1,
+                 addNodeMutationRate=0.1, selectionType='weightedRouletteWheel', DecodeDict=[],
+                 numGeneration=2, fitnessTestFunction=[], displayer=True, dirStore=[]):
         self.numInputs = numInputs
         self.numOutputs = numOutputs
         self.PopSize = PopSize
@@ -24,6 +29,7 @@ class Tweann:
         self.fitnessTest = fitnessTestFunction
         self.AddNodeMutationRate = addNodeMutationRate
         self.displayer = displayer
+        self.dirStore = dirStore
 
         self.GA = GA(PopSize=self.PopSize,
                      CrossOverRate=self.CrossOverRate,
@@ -38,20 +44,78 @@ class Tweann:
                      crossOverCustomFunction=self.CrossOver,
                      setPopFlag=True,
                      stringMutate='swap',
-                     progressGen= self.ProgressDisplayer,
+                     progressGen=self.ProgressDisplayer,
                      progressOverall=self.ProgressOverallDisplayer,
-                     infoBoard=self.InfoBoard
+                     infoBoard=self.InfoBoard,
+                     dirStore=self.dirStore
                      )
         self.NeatListGenomes = []
 
+        self.makeStorageFolder()
+
+    def makeStorageFolder(self):
+        if len(self.dirStore) != 0:
+            if path.exists(self.dirStore):
+                rmtree(self.dirStore)
+
+            mkdir(self.dirStore)
+
     def CreatePopulation(self):
-        for num in range(0, self.PopSize):
+        if len(self.dirStore) == 0:
+            self.CreatePopulationList()
+        else:
+            self.CreatePopulationFileStore()
+
+    def CreatePopulationList(self):
+        for num in range(0, self.PopSize + 2):
             net = NeuralNetwork(self.numInputs, self.numOutputs)
             net.CreateInitialGraph()
             self.NeatListGenomes.append(net)
 
         self.GA.setStartPopulation(self.NeatListGenomes)
         self.NeatListGenomes = []
+
+    def CreatePopulationFileStore(self):
+        for num in range(0, self.PopSize + 2):
+            net = NeuralNetwork(self.numInputs, self.numOutputs)
+            net.CreateInitialGraph()
+            child = {'chromo': net.NeuralNet,
+                     'Fitness': 0,
+                     'Info': [],
+                     'numInputs': self.numInputs,
+                     'numOutputs': self.numOutputs
+                     }
+            self.WriteToFolder(child, num)
+            print(f"Creating Child{num}")
+
+    def WriteToFolderJson(self, data, num):
+        fileName = 'Child' + str(num)
+        with open(self.dirStore + '/' + fileName + '.json', 'w') as json_file:
+            dump(data, json_file) #, indent=4
+
+    def WriteToFolderTxt(self, data, num):
+        fileName = 'Child' + str(num)
+        with open(self.dirStore + '/' + fileName + '.txt', 'w') as txt_file:
+            txt_file.write(str(data))
+
+    def WriteToFolder(self, data, num):
+        fileName = 'Child' + str(num)
+        writeData = orjson.dumps(data, option=orjson.OPT_NAIVE_UTC)
+        with open(self.dirStore + '/' + fileName + '.json', 'wb') as json_file:
+            json_file.write(writeData)
+            #dump(writeData, json_file)  #, indent=4
+
+    def ReadFromFolderJson(self, num):
+        fileName = 'Child' + str(num)
+        with open(self.dirStore + '/' + fileName + '.json', 'w') as json_file:
+            data = json.load(json_file)
+        return data
+
+    def ReadFromFolder(self, num):
+        fileName = 'Child' + str(num)
+        with open(self.dirStore + '/' + fileName + '.json', 'w') as json_file:
+            data = orjson.loads(json_file)
+        return data
 
     def GenerateBabies(self, mum, dad):
         maxMumNodeNum = -1
@@ -105,6 +169,37 @@ class Tweann:
         return baby1, baby2
 
     def Mutate(self, NN):
+        mutatedNN = self.MutateOneNeuronElement(NN)
+        return mutatedNN
+
+    def MutateOneNeuronElement(self, NN):
+        mutatedNN = NN
+        selectedNeuron = randrange(0, len(mutatedNN.NeuralNet['Network']))
+        neuron = mutatedNN.NeuralNet['Network'][selectedNeuron]
+        selectedWeight = randrange(0, len(neuron['Weights']))
+
+        neuron['Weights'][selectedWeight] = (np.array(neuron['Weights'][selectedWeight]) +
+                             (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
+        neuron['Bias'] = (np.array(neuron['Bias']) +
+                          (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
+        neuron['RecurrentWeight'] = (np.array(neuron['RecurrentWeight']) +
+                                     (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
+
+        if random() < self.MutationRate:
+            neuron['Recurrent'] = choice([0, 1])
+
+        if random() < self.MutationRate:
+            neuron['Activation'] = choice(Neuron().activationFunc)
+
+        if random() < self.MutationRate:
+            neuron['Enabled'] = choice([0, 1])
+
+        if random() < self.AddNodeMutationRate:
+            mutatedNN = self.MutateByAddingNode(mutatedNN)
+
+        return mutatedNN
+
+    def MutateAllNeurons(self, NN):
         mutatedNN = NN
         for neuron in mutatedNN.NeuralNet['Network']:
             neuron['Weights'] = (np.array(neuron['Weights']) +
@@ -115,13 +210,13 @@ class Tweann:
                                          (-self.MutationRate + 2 * self.MutationRate * random())).tolist()
 
             if random() < self.MutationRate:
-                neuron['Recurrent'] = 0  # choice([0, 1])
+                neuron['Recurrent'] = choice([0, 1])
 
             if random() < self.MutationRate:
                 neuron['Activation'] = choice(Neuron().activationFunc)
 
             if random() < self.MutationRate:
-                neuron['Enabled'] = 1  # choice([0, 1])
+                neuron['Enabled'] = choice([0, 1])
 
         if random() < self.AddNodeMutationRate:
             mutatedNN = self.MutateByAddingNode(mutatedNN)
@@ -196,7 +291,9 @@ class Tweann:
         self.GA.Epoch()
 
     def Evolve(self):
+        print("Creating Population")
         self.CreatePopulation()
+        print("Population Created")
         self.Epoch()
 
     @staticmethod
@@ -206,7 +303,11 @@ class Tweann:
 
     # @staticmethod
     def MutateByAddingNode(self, NNtoMutate):
-        NN =deepcopy(NNtoMutate)
+        if len(self.dirStore) == 0:
+            NN = deepcopy(NNtoMutate)
+        else:
+            NN = NNtoMutate
+
         if NN.NeuralNet['Species'][1] == 0:
             layerToAddNeuron = 0
         else:
@@ -214,7 +315,6 @@ class Tweann:
 
         maxNodesInLayer = -1
         maxNodes = 0
-
 
         for neuron in NN.NeuralNet['Network']:
 
@@ -280,5 +380,5 @@ if __name__ == '__main__':
                      fitnessTestFunction=TestFitness)
     testXOR.Evolve()
 
-    #while True:
+    # while True:
     #    pass

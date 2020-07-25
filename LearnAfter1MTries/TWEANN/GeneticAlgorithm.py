@@ -1,11 +1,16 @@
 import random as rd
-#from random import random
+# from random import random
 from random import randint
 from math import ceil
 import matplotlib.pyplot as plt
-#import numpy as np
-#from copy import deepcopy
+# import numpy as np
+# from copy import deepcopy
 from LearnAfter1MTries.TWEANN.NeuralNetwork import *
+import json
+import rapidjson
+import orjson
+from os import mkdir, path, rename
+from shutil import rmtree
 
 
 def BinToInt(binary):
@@ -123,7 +128,7 @@ def CrossOverRandomSwapPoint(mum, dad, chromoLength, crossOverRate):
     baby1 = mum.copy()
     baby2 = dad.copy()
 
-    if len(baby1['chromo'] ) != 0 or len(baby2['chromo'] ) != 0:
+    if len(baby1['chromo']) != 0 or len(baby2['chromo']) != 0:
         # just return parents as offspring dependent on the rate
         # or if parents are the same
         if random() > crossOverRate:  # or mum['chromo'] == dad['chromo']:
@@ -140,7 +145,7 @@ def CrossOverRandomSwapPoint(mum, dad, chromoLength, crossOverRate):
                 mum['chromo'][crossoverPoint:chromoLength]).copy()
             return baby1, baby2
     else:
-       # print("Empty baby found!!")
+        # print("Empty baby found!!")
         return baby1, baby2
 
 
@@ -160,11 +165,70 @@ def DecodeBinary(chromo, geneLength, DecodeDict):
     return decoded
 
 
-class GA:
+def WriteToFolderJson(folder, data, num):
+    fileName = 'Child' + str(num)
+    child = {'chromo': data['chromo'].NeuralNet,
+             'Fitness': data['Fitness'],
+             'Info': data['Info'],
+             'numInputs': data['chromo'].numInputs,
+             'numOutputs': data['chromo'].numOutputs
+             }
+    with open(folder + '/' + fileName + '.json', 'w') as json_file:
+        dump(child, json_file, indent=4)
+
+
+def WriteToFolder(folder, data, num):
+
+    fileName = 'Child' + str(num)
+    child = {'chromo': data['chromo'].NeuralNet,
+             'Fitness': data['Fitness'],
+             'Info': data['Info'],
+             'numInputs': data['chromo'].numInputs,
+             'numOutputs': data['chromo'].numOutputs
+             }
+    writeData = orjson.dumps(child, option=orjson.OPT_NAIVE_UTC|orjson.OPT_SERIALIZE_NUMPY)
+    with open(folder + '/' + fileName + '.json', 'wb') as json_file:
+        json_file.write(writeData)
+
+
+def ReadFromFolderJson(folder, num):
+    fileName = 'Child' + str(num)
+    with open(folder + '/' + fileName + '.json', 'r') as json_file:
+        data = json.load(json_file)
+    return data
+
+
+def ReadFromFolder(folder, num):
+    fileName = 'Child' + str(num)
+    with open(folder + '/' + fileName + '.json', 'rb') as json_file:
+        readData = json_file.read()
+    data = orjson.loads(readData)
+    return data
+
+
+def ReadFromFolderTxt(folder, num):
+    fileName = 'Child' + str(num)
+    with open(folder + '/' + fileName + '.txt', 'r') as txt_file:
+        data = txt_file.read()
+    return data
+
+
+def DeleteFolder(folderName):
+    if len(folderName) != 0:
+        if path.exists(folderName):
+            rmtree(folderName)
+
+
+def RenameFolder(oldFolderName, newFolderName):
+    rename(oldFolderName, newFolderName)
+
+
+class GA(object):
     def __init__(self, PopSize=100, CrossOverRate=0.7, MutationRate=0.001, ChromoLength=70, GeneLength=2,
                  selectionType='weightedRouletteWheel', crossOverType='randomSwapPoint', mutateType='Binary',
                  chromoType='Binary', genomeKey='chromo', mutationCustomFunction=[], crossOverCustomFunction=[],
-                 setPopFlag=False, stringMutate='swap', DecodeDict=[], numGeneration=100, fitnessTestFunction=[],
+                 setPopFlag=False, stringMutate='swap', dirStore=[], DecodeDict=[], numGeneration=100,
+                 fitnessTestFunction=[],
                  infoBoard=[], progressGen=[], progressOverall=[]):
 
         self.ListGenomes = []
@@ -173,6 +237,7 @@ class GA:
         self.MutationRate = MutationRate
         self.ChromoLength = ChromoLength
         self.GeneLength = GeneLength
+        self.dir = dirStore
 
         self.FittestGenome = 0
         self.BestFitnessScore = 0
@@ -192,10 +257,11 @@ class GA:
         self.Busy = True
 
         self.FittestGenome = {'chromo': [],
-                              'Fitness': 0,
+                              'Fitness': -1,
                               'Info': []
                               }
         self.FittestGenomeEver = self.FittestGenome.copy()
+        self.dirStore = dirStore
         self.numGeneration = numGeneration
         self.fitnessTestFunction = fitnessTestFunction
         self.infoBoard = infoBoard
@@ -207,6 +273,58 @@ class GA:
         self.x = []
         self.plots = 0
 
+    def WriteToListOfGenomes(self, Genomes, num):
+        if len(self.dir) == 0:
+            self.ListGenomes.append(Genomes)
+        else:
+            WriteToFolder(self.dir, Genomes, num)
+
+    def WriteToTempListOfGenomes(self, tempList, Genomes, num):
+        if len(self.dir) == 0:
+            tempList.append(Genomes)
+        else:
+            tempFolder = 'temp'
+            if not path.exists(tempFolder):
+                mkdir(tempFolder)
+            child = {'chromo': Genomes['chromo'],
+                     'Fitness': Genomes['Fitness'],
+                     'Info': Genomes['Info']
+                     }
+            WriteToFolder(tempFolder, child, num)
+
+    def WriteBabyListGenomesToListGenomes(self, tempList):
+        if len(self.dir) == 0:
+            self.ListGenomes = tempList
+        else:
+            DeleteFolder(self.dirStore)
+            RenameFolder('temp', self.dirStore)
+
+    def ReadFromListOfGenomesJSon(self, num):
+        if len(self.dir) == 0:
+            return self.ListGenomes[num]
+        else:
+            data = ReadFromFolder(self.dir, num)
+            net = NeuralNetwork(data['numInputs'], data['numOutputs'])
+            net.NeuralNet = data['chromo']
+            child = {'chromo': net,
+                     'Fitness': data['Fitness'],
+                     'Info': data['Info']
+                     }
+            return child
+
+    def ReadFromListOfGenomes(self, num):
+        if len(self.dir) == 0:
+            return self.ListGenomes[num]
+        else:
+            data = ReadFromFolder(self.dir, num)
+            net = NeuralNetwork(int(data['numInputs']), int(data['numOutputs']))
+            net.NeuralNet = data['chromo']
+            child = {'chromo': net,
+                     'Fitness': data['Fitness'],
+                     'Info': data['Info']
+                     }
+            return child
+
     def CreateStartPopulation(self):
 
         if not self.ExternalGenPopulationFlag:
@@ -216,7 +334,7 @@ class GA:
                                'Fitness': 0,
                                'Info': []
                                }
-                    self.ListGenomes.append(Genomes)
+                    self.WriteToListOfGenomes(Genomes, genome)
 
                 self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
                                           'Fitness': 0,
@@ -229,26 +347,28 @@ class GA:
                         'Fitness': 0,
                         'Info': []
                     }
-                    self.ListGenomes.append(Genomes)
+                    self.WriteToListOfGenomes(Genomes, genome)
 
                 self.FittestGenomeEver = {'chromo': [0 for bit in range(0, self.ChromoLength)],
-                                          'Fitness': 0,
+                                          'Fitness': -1,
                                           'Info': []
                                           }
 
         self.FittestGenome = self.FittestGenomeEver.copy()
-        self.BestFitnessScore = 0
+        self.BestFitnessScore = -1
         self.TotalFitnessScore = 0
         self.Generation = 0
+        self.WriteToListOfGenomes(self.FittestGenome, self.PopSize + 1)
+        self.WriteToListOfGenomes(self.FittestGenome, self.PopSize + 2)
 
     def setStartPopulation(self, population):
-        for chromo in population:
+        for num, chromo in enumerate(population):
             Genomes = {
                 'chromo': chromo,
                 'Fitness': 0,
                 'Info': []
             }
-            self.ListGenomes.append(Genomes)
+            self.WriteToListOfGenomes(Genomes, num)
 
     def MutateChromeRealNumber(self, chromo):
         mutation = chromo.copy
@@ -294,31 +414,31 @@ class GA:
         mumNetwork = mumChrome['chromo']
         dadNetwork = dadChrome['chromo']
 
-        if len(mumNetwork.NeuralNet['Species']) != 0 or len(dadNetwork.NeuralNet['Species']) !=0:
-            mumLayerList =mumNetwork.NeuralNet['Species'][1:]
+        if len(mumNetwork.NeuralNet['Species']) != 0 or len(dadNetwork.NeuralNet['Species']) != 0:
+            mumLayerList = mumNetwork.NeuralNet['Species'][1:]
             dadLayerList = dadNetwork.NeuralNet['Species'][1:]
             if len(mumLayerList) > len(dadLayerList):
-                maxLayerList =  mumLayerList
+                maxLayerList = mumLayerList
             else:
                 maxLayerList = dadLayerList
 
             numInputs = mumNetwork.numInputs
-            numOutputs = mumNetwork.numInputs
+            numOutputs = mumNetwork.numOutputs
             baby1Chromo = NeuralNetwork(numInputs, numOutputs)
             baby2Chromo = NeuralNetwork(numInputs, numOutputs)
 
             mumForCrossOver = dict(chromo=[])
             dadForCrossOver = dict(chromo=[])
             for index, element in enumerate(maxLayerList):
-                if index < len(maxLayerList)-1:
+                if index < len(maxLayerList) - 1:
                     mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(index)
                     dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(index)
-                    #if len(mumForCrossOver['chromo']) != 0 and len(dadForCrossOver['chromo']) != 0:
+                    # if len(mumForCrossOver['chromo']) != 0 and len(dadForCrossOver['chromo']) != 0:
                     self.ChromoLength = element
                     if element != 0:
                         baby1Layer, baby2Layer = self.CrossOver(mumForCrossOver, dadForCrossOver)
-                        baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network']+baby1Layer['chromo']
-                        baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network']+baby2Layer['chromo']
+                        baby1Chromo.NeuralNet['Network'] = baby1Chromo.NeuralNet['Network'] + baby1Layer['chromo']
+                        baby2Chromo.NeuralNet['Network'] = baby2Chromo.NeuralNet['Network'] + baby2Layer['chromo']
                 else:
                     mumForCrossOver['chromo'] = mumNetwork.FindNeuronsInLayer(-1)
                     dadForCrossOver['chromo'] = dadNetwork.FindNeuronsInLayer(-1)
@@ -343,12 +463,11 @@ class GA:
                      }
 
         else:
-            #print('empty mum or dad')
+            # print('empty mum or dad')
             baby1 = choice(self.ListGenomes)
             baby2 = choice(self.ListGenomes)
 
         return baby1, baby2
-
 
     def CrossOver(self, mumForCrossOver, dadForCrossOver):
 
@@ -367,20 +486,40 @@ class GA:
         if self.selectionType == 'weightedRouletteWheel':
             return self.WeightedRouletteWheelSelection()
 
-    def RouletteWheelSelection(self):
-        selectedGenome = self.ListGenomes[0]
+    def RouletteWheelSelectionOld(self):
+        selectedGenome = self.ReadFromListOfGenomes(0)
         Slice = random() * self.TotalFitnessScore
 
         total = 0.0
 
-        for genome in self.ListGenomes:
+        for index in range(0, self.PopSize + 2):
+            genome = self.ReadFromListOfGenomes(index)
             total += genome['Fitness']
 
             if total >= Slice:
-                selectedGenome = genome.copy()
+                if len(self.dir) == 0:
+                    selectedGenome = genome.copy()
+                else:
+                    selectedGenome = genome
                 break
-        if len(selectedGenome) == 0:
-            y = 0
+
+        return selectedGenome
+
+    def RouletteWheelSelection(self):
+        selectedGenomeIndex = 0
+        Slice = random() * self.TotalFitnessScore
+
+        total = 0.0
+
+        for index, fitness in enumerate(self.data):
+            total += fitness
+
+            if total >= Slice:
+                selectedGenomeIndex = index
+                break
+
+        selectedGenome = self.ReadFromListOfGenomes(selectedGenomeIndex)
+
         return selectedGenome
 
     def WeightedRouletteWheelSelection(self):
@@ -401,14 +540,17 @@ class GA:
         selectedGenome = self.ListGenomes[selected]
         return selectedGenome
 
-    def UpdateFitnessScores(self, fitnessTestFunction, genomeKey):
-        self.BestFitnessScore = 0
+    def UpdateFitnessScores(self, fitnessTestFunction):
+        self.BestFitnessScore = -1
         self.TotalFitnessScore = 0
+        self.data = []
 
-        for genome in self.ListGenomes:
-
+        for index in range(0, self.PopSize + 2):
+            genome = self.ReadFromListOfGenomes(index)
             decode = self.Decode(genome)
             fitness, info = fitnessTestFunction(decode)
+            print(
+                f"Child{index} fitness {fitness}, best {self.BestFitnessScore}, bestEver {self.FittestGenomeEver['Fitness']}")
             self.TotalFitnessScore += fitness
             self.data.append(fitness)
             genome['Fitness'] = fitness
@@ -431,24 +573,22 @@ class GA:
     def GenerateBabies(self):
         NewBabies = 0
         ListBabyGenomes = []
-        #self.ListGenomes = []
 
         while NewBabies < self.PopSize:
             mumSelected = self.Selection()
             dadSelected = self.Selection()
 
-            if len(mumSelected) == 0 or len(dadSelected) == 0:
-                y=0
-
             if not self.CrossOverCustomFunction:
                 baby1, baby2 = self.CrossOver(mumSelected, dadSelected)
             else:
+                print(f"CrossOver to create baby{NewBabies},baby{NewBabies + 1} ")
                 baby1, baby2 = self.CrossOverNeuralNetwork(mumSelected, dadSelected)
 
             if not self.MutationCustomFunction:
                 baby1 = self.Mutate(baby1)
                 baby2 = self.Mutate(baby2)
             else:
+                print(f"Mutating to create baby{NewBabies},baby{NewBabies + 1} ")
                 baby1Chromo = self.MutationCustomFunction(baby1['chromo'])
                 baby2Chromo = self.MutationCustomFunction(baby2['chromo'])
 
@@ -462,13 +602,15 @@ class GA:
                          'Info': []
                          }
 
-            ListBabyGenomes.append(baby1)
-            ListBabyGenomes.append(baby2)
-            NewBabies += 2
+            self.WriteToTempListOfGenomes(ListBabyGenomes, baby1, NewBabies)
+            NewBabies += 1
+            self.WriteToTempListOfGenomes(ListBabyGenomes, baby2, NewBabies)
+            NewBabies += 1
 
-        self.ListGenomes = ListBabyGenomes
-        self.ListGenomes.append(self.FittestGenomeEver)
-        self.ListGenomes.append(self.FittestGenome)
+        self.WriteBabyListGenomesToListGenomes(ListBabyGenomes)
+        self.WriteToListOfGenomes(self.FittestGenome, NewBabies)
+        self.WriteToListOfGenomes(self.FittestGenomeEver, NewBabies + 1)
+        print(f"Population created")
 
     def Decode(self, chromo):
 
@@ -487,12 +629,12 @@ class GA:
     def Epoch(self):
 
         while self.Generation != self.numGeneration:
-            self.UpdateFitnessScores(self.fitnessTestFunction, self.genomeKey)
+            self.UpdateFitnessScores(self.fitnessTestFunction)
             self.GenerateBabies()
             self.Generation += 1
 
             self.InfoBoard()
-            #self.PlotData()
+            # self.PlotData()
 
             if self.Generation == 3:
                 pass

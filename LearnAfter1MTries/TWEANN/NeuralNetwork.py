@@ -4,7 +4,6 @@ import numpy as np
 from random import random
 from random import choice
 from LearnAfter1MTries.TWEANN import TweannRender
-#from copy import deepcopy
 
 
 class Neuron:
@@ -35,7 +34,7 @@ class Neuron:
             if u > 0:
                 y = 1
             else:
-                y=0
+                y = 0
         return y
 
     @staticmethod
@@ -54,11 +53,15 @@ class Neuron:
     def Linear(u):
         return u
 
+    @staticmethod
+    def Softmax(u):
+        pass
+
     def UpdateNeuron(self, nodeInputs):
-        #inputs = np.array(self.neuron['Inputs'])
+        # inputs = np.array(self.neuron['Inputs'])
         inputs = np.array(nodeInputs)
         weights = np.array(self.neuron['Weights'])
-        #diff = len(self.neuron['Inputs']) - len(self.neuron['Weights'])
+        # diff = len(self.neuron['Inputs']) - len(self.neuron['Weights'])
         diff = len(nodeInputs) - len(self.neuron['Weights'])
 
         # Padding is being done so that inputs and weights vector lengths dont have to be compatible
@@ -103,8 +106,8 @@ class NeuralNetwork:
             'Output': [],
             'Layers': 0,
             'Species': [self.numInputs, 0, self.numOutputs],  # [inputs, hiddenlayers, outputs]
-            'MaxNodes': None,
-            'Fitness': None
+            'MaxNodes': [],
+            'Fitness': []
         }
 
     def __str__(self):
@@ -136,19 +139,21 @@ class NeuralNetwork:
         nextLayerInput = []
         nextnextLayerInput = []
 
-        layerList = [neuron['Layer'] for neuron in self.NeuralNet['Network']]
+        try:
+            layerList = [neuron['Layer'] for neuron in self.NeuralNet['Network']]
+        except:
+            y = 0
 
         Iter = 0
         for index, neuron in enumerate(self.NeuralNet['Network']):
             NeuralNetNeuron = Neuron()
             NeuralNetNeuron.neuron = neuron
             if neuron['Layer'] == 0:
-                #neuron['Inputs'] = NetInputs
                 NeuralNetNeuron.UpdateNeuron(NetInputs)
                 nextLayerInput.append(NeuralNetNeuron.neuron['Output'])
             else:
                 if neuron['Layer'] == layerList[index]:
-                    #neuron['Inputs'] = deepcopy(nextLayerInput)
+                    # neuron['Inputs'] = deepcopy(nextLayerInput)
                     NeuralNetNeuron.UpdateNeuron(nextLayerInput)
                     nextnextLayerInput.append(NeuralNetNeuron.neuron['Output'])
                     Iter += 1
@@ -167,7 +172,7 @@ class NeuralNetwork:
         return neuronInLayer
 
     def AddNeuron(self, newNeuron):
-        addedNeuron =newNeuron
+        addedNeuron = newNeuron
         newNodeNum = -1
         newNodeID = -1
 
@@ -250,7 +255,7 @@ class NeuralNetwork:
         return network
 
     def DrawGraph(self, graphWindow, tileSize=24, offset=0):
-        print('Drawing Species',self.NeuralNet['Species'])
+        print('Drawing Species', self.NeuralNet['Species'])
         inputOffset = (self.NeuralNet['MaxNodes'] - self.numInputs) / 2
         for inputs in range(0, self.numInputs):
             TweannRender.Inputs(graphWindow, 0, inputs, tileSize, offset, inputOffset)

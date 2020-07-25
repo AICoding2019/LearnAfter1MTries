@@ -5,7 +5,7 @@ from scipy.io import wavfile
 import numpy as np
 
 nsamples = 16000
-path = '/home/azureuser/Downloads/data/speech_commands/'
+path = '/home/a/Downloads/speech_commands' #'/home/azureuser/Downloads/data/speech_commands/'
 dataSetName = 'SpeechDataSet.json'
 
 with open(path + '/' + dataSetName, 'r') as json_file:
@@ -33,7 +33,7 @@ def TestFitness(NN):
     shuffle(data['training'])
 
     totalError =0
-    for wavFileName in data['training'][0:10]:
+    for wavFileName in data['training'][0:100]:
         X = get_wav(path+'/DataSet/' + wavFileName)
         NN.UpdateGraph(X)
 
@@ -50,14 +50,15 @@ def TestFitness(NN):
 
         NN.NeuralNet['Output'] = []
 
-    fitness = (10*numberCorrect + (1 / (1 + totalError))) / 11
+    #fitness = (100*numberCorrect + (1 / (1 + totalError))) / (100*100)
+    fitness = (numberCorrect /100)
     NN.NeuralNet['Fitness'] = fitness
 
-    return fitness, [numberCorrect, totalError, NN.NeuralNet['Species']]
+    return fitness, [numberCorrect, NN.NeuralNet['Species']]
 
 
-testSpeechRecog = Tweann(numInputs=nsamples, numOutputs=classLength, PopSize=100, numGeneration=100000,
-                         selectionType='rouletteWheel', fitnessTestFunction=TestFitness,displayer=False)
+testSpeechRecog = Tweann(numInputs=nsamples, numOutputs=classLength, PopSize=250, numGeneration=100000, addNodeMutationRate=0.1,
+                         selectionType='rouletteWheel', fitnessTestFunction=TestFitness,displayer=False,dirStore='Population')
 testSpeechRecog.Evolve()
 
 while True:
