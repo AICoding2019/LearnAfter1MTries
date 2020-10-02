@@ -1,14 +1,15 @@
 import numpy as np
 import h5py
 from os import remove
-from random import choice
+from random import choice, random, randint
 from math import exp, tanh
 
 
 class Tweann:
-    def __init__(self, num_inputs, num_outputs, population_size=100, crossover_rate=0.7, mutation_rate=0.1,
-                 add_node_mutation_rate=0.1, selection_type='roulette_wheel',
+    def __init__(self, num_inputs, num_outputs, population_size=100, crossover_rate=0.7,
+                 mutation_rate=0.1, add_node_mutation_rate=0.1, selection_type='roulette_wheel',
                  num_generation=2, log_path=None):
+
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.population_size = population_size
@@ -21,8 +22,9 @@ class Tweann:
 
         self.fittest_child = None
         self.fittest_child_ever = None
-        self.best_fitness_score = 0
-        self.best_fitness_score_ever = 0
+        self.best_fitness_score = -1.0
+        self.best_fitness_score_ever = -1.0
+        self.total_fitness_score = 0.0
         self.activationFunc = ['sigmoid', 'relu', 'tanh', 'leakyRelu', 'linear']
         self.neuron_chromo = ['Weights', 'Bias', 'Enabled', 'Recurrent', 'RecurrentWeight', 'Activation', 'Inputs',
                               'Output']
@@ -37,7 +39,7 @@ class Tweann:
         self.epoch()
 
     def create_population(self):
-        for child in range(0, self.population_size):
+        for child in range(0, self.population_size + 2):
             child_init_data = self.create_init_child_chromo('Child' + str(child))
             self.create_child_dataset(child_init_data)
 
@@ -56,20 +58,20 @@ class Tweann:
 
         chromo[child + '/Layer-1/Nodes'] = self.num_outputs
         chromo[child + '/HiddenLayers'] = 0
-        chromo[child + '/Fitness'] = 0
+        chromo[child + '/Fitness'] = 0.0
         return chromo
 
     @staticmethod
-    def create_child_dataset(child_dataset):
-        with h5py.File('Children.hdf5', 'a') as children:
+    def create_child_dataset(child_dataset, hdf5_file='Children.hdf5'):
+        with h5py.File(hdf5_file, 'a') as children:
             for key in child_dataset:
                 group = children.create_group(key)
                 group.create_dataset('data', data=child_dataset[key])
 
     # Todo
     @staticmethod
-    def write_to_child_dataset(child_dataset):
-        with h5py.File('Children.hdf5', 'r+') as children:
+    def write_to_child_dataset(child_dataset, hdf5_file='Children.hdf5'):
+        with h5py.File(hdf5_file, 'r+') as children:
             for key in child_dataset:
                 children.create_dataset('data', data=child_dataset[key])
 
@@ -77,10 +79,131 @@ class Tweann:
         generation = 0
         while generation < self.num_generation:
             generation += 1
-            self.update_fitness(self.fitness_function)
+            self._update_children_fitness()
+            self._generate_babies()
 
-    def update_fitness(self):
-        pass
+    def _update_children_fitness(self):
+        child = None
+        self.best_fitness_score = -1
+        self.total_fitness_score = 0
+
+        for num_child in range(0, self.population_size + 2):
+            child = 'Child' + str(num_child)
+            fitness, info = self.fitness_function(child)
+            self._update_fitness(child, fitness)
+
+        self._update_best_child(child)
+
+    def _update_fitness(self, child, fitness):
+        key = child + '/Fitness'
+        self._write_data(key, fitness)
+        self.total_fitness_score += fitness
+
+        if fitness > self.best_fitness_score:
+            self.best_fitness_score = fitness
+            self.fittest_child = child
+
+    def _update_best_child(self, child):
+        if self.best_fitness_score > self.best_fitness_score_ever:
+            self.fittest_child_ever = child
+            self.best_fitness_score_ever = self.best_fitness_score
+
+    def _generate_babies(self):
+        new_babies = 0
+
+        while new_babies < self.population_size:
+            mum_selected = self._selection()
+            dad_selected = self._selection()
+
+            baby1, baby2 = self._crossover(mum_selected, dad_selected)
+
+    def _selection(self):
+        if self.selection_type == 'rouletteWheel':
+            return self._roulette_wheel_selection()
+
+    def _roulette_wheel_selection(self):
+        roulette_slice = random()
+        total = 0.0
+        selected_child = 'Child' + str(self.population_size + 2)
+
+        for num_child in range(0, self.population_size + 2):
+            child = 'Child' + str(num_child)
+            key = child + '/Fitness'
+            fitness = self._read_data(key)
+            total += fitness / self.total_fitness_score
+
+            if total >= roulette_slice:
+                selected_child = child
+                break
+
+        return selected_child
+
+    def _crossover(self, mum, dad, baby_num):
+        layer, node, node_key = self._crossover_node_pick(mum, dad)
+        if self._check_node_exist(mum, layer, node) and self._check_node_exist(dad, layer, node):
+            self._crossover_node(mum, dad, node_key, baby_num)
+        else:
+            self._clone(mum, baby_num)
+            self._clone(dad, baby_num + 1)
+
+    @staticmethod
+    def _clone(parent, baby_num):
+        with h5py.File('Children.hdf5', 'a') as children:
+            with h5py.File('Babies.hdf5', 'a') as babies:
+                children.copy(parent, babies, name='Child' + str(baby_num))
+
+    # Todo Nice idea not used
+    @staticmethod
+    def _inherit(recipient, donor, node_key, baby_num):
+        with h5py.File('Children.hdf5', 'a') as children:
+            with h5py.File('Babies.hdf5', 'a') as babies:
+                children.copy(recipient, babies, name='Child' + str(baby_num))
+                node_to_inherit = donor + '/' + node_key
+                children.copy(node_to_inherit, babies, name='Child' + str(baby_num) + '/' + node_key)
+
+    def _crossover_node(self, mum, dad, node_key, baby_num):
+        layer, node, node_key = self._crossover_node_pick(mum, dad)
+        mum_dict = self._get_node_data(mum + '/' + node_key)
+        dad_dict = self._get_node_data(dad + '/' + node_key)
+        return mum, dad
+
+    def _cross_over_random_swap_point(self, mum_array, dad_array):
+        max_swap = self._get_max_swap_point(mum_array, dad_array)
+
+        baby1_array = mum_array
+        baby2_array = dad_array
+
+        if max_swap != 0:
+            swap_point = randint(0, max_swap)
+            baby1_array, baby2_array = self._swap_array(mum_array, dad_array, max_swap, swap_point)
+
+        return baby1_array, baby2_array
+
+    def _crossover_node_pick(self, mum, dad):
+        dominant = choice([mum, dad])
+        pick_layer = self._pick(dominant + '/HiddenLayers')
+        layer = pick_layer - 1
+        layer_key = '/Layer' + str(layer)
+        node = self._pick(dominant + layer_key + '/Nodes')
+        node_key = dominant + layer_key + '/Node' + str(node)
+        return layer, node, node_key
+
+    def _pick(self, key):
+        num_key = int(self._read_data(key))
+        pick = randint(0, num_key)
+        return pick
+
+    def _check_node_exist(self, parent, layer, node):
+        num_hidden_layers = int(self._read_data(parent + '/HiddenLayers'))
+
+        if layer > num_hidden_layers:
+            return False
+        else:
+            num_nodes = int(self._read_data(parent + '/Layer' + str(layer) + '/Nodes'))
+            if node > num_nodes:
+                return False
+            else:
+                return True
 
     def get_neural_network_output(self, child, nn_input):
         self._update_neural_network(child, nn_input)
@@ -152,38 +275,38 @@ class Tweann:
         self._write_data(layer_output_key, layer_output)
 
     @staticmethod
-    def _write_data(key, data):
-        with h5py.File('Children.hdf5', 'r+') as children:
+    def _write_data(key, data, hdf5_file='Children.hdf5'):
+        with h5py.File(hdf5_file, 'r+') as children:
             data_to_write = children[key]['data']
             data_to_write[...] = data
 
     @staticmethod
-    def _read_data(key):
-        with h5py.File('Children.hdf5', 'r') as children:
+    def _read_data(key, hdf5_file='Children.hdf5'):
+        with h5py.File(hdf5_file, 'r') as children:
             data = np.array(children.get(key)['data'])
 
         return data
 
     @staticmethod
-    def _get_child_keys(child):
+    def _get_child_keys(child, hdf5_file='Children.hdf5'):
         keys = []
 
         def get_keys(name):
             if ('data' in name) and (child in name) and ('Inputs' in name):
                 keys.append(name)
 
-        with h5py.File('Children.hdf5', 'r') as children:
+        with h5py.File(hdf5_file, 'r') as children:
             children.visit(get_keys)
 
         return keys
 
-    def _get_layer_node_data(self, num_child, num_layer, num_node):
+    def _get_layer_node_data(self, num_child, num_layer, num_node, hdf5_file='Children.hdf5'):
         node_dict = dict()
         child = 'Child' + str(num_child) + '/'
         layer = 'Layer' + str(num_layer) + '/'
         node = 'Node' + str(num_node) + '/'
 
-        with h5py.File('Children.hdf5', 'r') as children:
+        with h5py.File(hdf5_file, 'r') as children:
             for chromo in self.neuron_chromo:
                 key = child + layer + node + chromo
                 node_dict[chromo] = np.array(children.get(key)['data'])
@@ -191,7 +314,7 @@ class Tweann:
         return node_dict
 
     @staticmethod
-    def _get_layer_node_list(child):
+    def _get_layer_node_list(child, hdf5_file='Children.hdf5'):
 
         layer_list = []
         node_list = []
@@ -203,28 +326,28 @@ class Tweann:
             if ('data' in name) and (child in name) and ('Nodes' in name):
                 node_list.append(name)
 
-        with h5py.File('Children.hdf5', 'r') as children:
+        with h5py.File(hdf5_file, 'r') as children:
             children.visit(_get_list)
 
         return layer_list, node_list
 
     @staticmethod
-    def _get_choice_list(key):
+    def _get_choice_list(key, hdf5_file='Children.hdf5'):
         key_list = []
 
         def _get_list(name):
             if ('data' not in name) and (key[0] in name) and (key[1] in name) and (key[2] in name):
                 key_list.append(name)
 
-        with h5py.File('Children.hdf5', 'r') as children:
+        with h5py.File(hdf5_file, 'r') as children:
             children.visit(_get_list)
 
         return key_list
 
-    def _get_node_data(self, base_key):
+    def _get_node_data(self, base_key, hdf5_file='Children.hdf5'):
         node_dict = dict()
 
-        with h5py.File('Children.hdf5', 'r') as children:
+        with h5py.File(hdf5_file, 'r') as children:
             for chromo in self.neuron_chromo:
                 key = base_key + '/' + chromo
                 node_dict[chromo] = np.array(children.get(key)['data'])
@@ -270,9 +393,31 @@ class Tweann:
 
         return new_weights, new_inputs
 
+    @staticmethod
+    def _get_max_swap_point(mum_array, dad_array):
+        mum_shape = mum_array.shape[0]
+        dad_shape = dad_array.shape[0]
+
+        max_swap = min(mum_shape, dad_shape)
+        return max_swap
+
+    @staticmethod
+    def _swap_array(mum_array, dad_array, max_swap, swap_point):
+        baby1_array = mum_array.copy()
+        baby2_array = dad_array.copy()
+
+        baby1_array[0:swap_point] = mum_array[0:swap_point]
+        baby1_array[swap_point:max_swap] = dad_array[swap_point:max_swap]
+
+        baby2_array[0:swap_point] = dad_array[0:swap_point]
+        baby2_array[swap_point:max_swap] = mum_array[swap_point:max_swap]
+
+        return baby1_array, baby2_array
+
+
     # This function will be overwritten by the user class
-    def fitness_function(self):
-        pass
+    def fitness_function(self, child):
+        return 0
 
     # This function will be overwritten by the user class
     def decoder(self):
