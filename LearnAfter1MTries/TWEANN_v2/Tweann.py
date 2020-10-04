@@ -1,13 +1,14 @@
 import numpy as np
 import h5py
-from os import remove
+from os import remove, rename
 from random import choice, random, randint
 from math import exp, tanh
 
 
 class Tweann:
     def __init__(self, num_inputs, num_outputs, population_size=100, crossover_rate=0.7,
-                 mutation_rate=0.1, add_node_mutation_rate=0.1, selection_type='roulette_wheel',
+                 mutation_rate=0.1, add_node_mutation_rate=0.1, perturbation_rate=0.001,
+                 selection_type='roulette_wheel',
                  num_generation=2, log_path=None):
 
         self.num_inputs = num_inputs
@@ -18,6 +19,7 @@ class Tweann:
         self.selection_type = selection_type
         self.num_generation = num_generation
         self.add_node_mutation_rate = add_node_mutation_rate
+        self.perturbation_rate = perturbation_rate
         self.log_path = log_path
 
         self.fittest_child = None
@@ -29,9 +31,6 @@ class Tweann:
         self.neuron_chromo = ['Weights', 'Bias', 'Enabled', 'Recurrent', 'RecurrentWeight', 'Activation', 'Inputs',
                               'Output']
 
-    def create_children_file(self):
-        pass
-
     def evolve(self):
         print("Creating population")
         self.create_population()
@@ -40,21 +39,15 @@ class Tweann:
 
     def create_population(self):
         for child in range(0, self.population_size + 2):
-            child_init_data = self.create_init_child_chromo('Child' + str(child))
+            child_init_data = self._create_init_child_chromo('Child' + str(child))
             self.create_child_dataset(child_init_data)
 
-    def create_init_child_chromo(self, child):
+    def _create_init_child_chromo(self, child):
         chromo = dict()
         for output_node_num in range(0, self.num_outputs):
             node_name = 'Node' + str(output_node_num)
-            chromo[child + '/Layer-1/' + node_name + '/Weights'] = np.random.rand(self.num_inputs, 1)
-            chromo[child + '/Layer-1/' + node_name + '/Bias'] = np.random.rand(1, 1)
-            chromo[child + '/Layer-1/' + node_name + '/Enabled'] = 1
-            chromo[child + '/Layer-1/' + node_name + '/Recurrent'] = choice([0, 1])
-            chromo[child + '/Layer-1/' + node_name + '/RecurrentWeight'] = np.random.rand(1, 1)
-            chromo[child + '/Layer-1/' + node_name + '/Activation'] = choice(self.activationFunc)
-            chromo[child + '/Layer-1/' + node_name + '/Inputs'] = np.zeros((self.num_inputs, 1))
-            chromo[child + '/Layer-1/' + node_name + '/Output'] = np.zeros((1, 1))
+            key = child + '/Layer-1/' + node_name
+            chromo = self._new_node_dict(key, self.num_inputs)
 
         chromo[child + '/Layer-1/Nodes'] = self.num_outputs
         chromo[child + '/HiddenLayers'] = 0
@@ -81,6 +74,7 @@ class Tweann:
             generation += 1
             self._update_children_fitness()
             self._generate_babies()
+            self._create_new_population()
 
     def _update_children_fitness(self):
         child = None
@@ -110,12 +104,27 @@ class Tweann:
 
     def _generate_babies(self):
         new_babies = 0
+        baby_num = 0
 
         while new_babies < self.population_size:
-            mum_selected = self._selection()
-            dad_selected = self._selection()
+            mum_selected, dad_selected = self._parent_selection()
+            self._crossover_babies(mum_selected, dad_selected, baby_num)
+            self._mutate_babies(baby_num)
+            baby_num += 2
+            new_babies = baby_num
 
-            baby1, baby2 = self._crossover(mum_selected, dad_selected)
+    def _parent_selection(self):
+        mum_selected = self._selection()
+        dad_selected = self._selection()
+        return mum_selected, dad_selected
+
+    def _crossover_babies(self, mum_selected, dad_selected, baby_num):
+        if random() < self.crossover_rate:
+            self._crossover(mum_selected, dad_selected, baby_num)
+
+    def _mutate_babies(self, baby_num):
+        self._mutate(baby_num)
+        self._mutate(baby_num + 1)
 
     def _selection(self):
         if self.selection_type == 'rouletteWheel':
@@ -140,11 +149,11 @@ class Tweann:
 
     def _crossover(self, mum, dad, baby_num):
         layer, node, node_key = self._crossover_node_pick(mum, dad)
+        self._clone(mum, baby_num)
+        self._clone(dad, baby_num + 1)
+
         if self._check_node_exist(mum, layer, node) and self._check_node_exist(dad, layer, node):
             self._crossover_node(mum, dad, node_key, baby_num)
-        else:
-            self._clone(mum, baby_num)
-            self._clone(dad, baby_num + 1)
 
     @staticmethod
     def _clone(parent, baby_num):
@@ -162,10 +171,44 @@ class Tweann:
                 children.copy(node_to_inherit, babies, name='Child' + str(baby_num) + '/' + node_key)
 
     def _crossover_node(self, mum, dad, node_key, baby_num):
-        layer, node, node_key = self._crossover_node_pick(mum, dad)
+        mum_dict, dad_dict = self._get_crossover_node_dict(mum, dad, node_key)
+        baby1_dict, baby2_dict = self._crossover_node_element(mum_dict, dad_dict)
+        baby1_node_key = 'Child' + str(baby_num - 1) + '/' + node_key
+        baby2_node_key = 'Child' + str(baby_num) + '/' + node_key
+        self._set_node_data(baby1_node_key, baby1_dict)
+        self._set_node_data(baby2_node_key, baby2_dict)
+
+    def _get_crossover_node_dict(self, mum, dad, node_key):
         mum_dict = self._get_node_data(mum + '/' + node_key)
         dad_dict = self._get_node_data(dad + '/' + node_key)
-        return mum, dad
+        return mum_dict, dad_dict
+
+    def _crossover_node_element(self, mum_dict, dad_dict):
+        baby1_dict = dict()
+        baby2_dict = dict()
+
+        for element in mum_dict:
+            if isinstance(mum_dict[element], str):
+                baby1_dict[element], baby2_dict[element] = self._cross_over_swap(mum_dict[element], dad_dict[element])
+            if isinstance(mum_dict[element], np.ndarray):
+                baby1_dict[element], baby2_dict[element] = self._cross_over_random_swap_point(mum_dict[element],
+                                                                                              dad_dict[element])
+            if isinstance(mum_dict[element], int):
+                baby1_dict[element], baby2_dict[element] = self._cross_over_swap(mum_dict[element], dad_dict[element])
+
+        return baby1_dict, baby2_dict
+
+    @staticmethod
+    def _cross_over_swap(mum_element, dad_element, rate=0.5):
+        if random() < rate:
+            baby1_element = mum_element
+            baby2_element = dad_element
+
+        else:
+            baby1_element = dad_element
+            baby2_element = mum_element
+
+        return baby1_element, baby2_element
 
     def _cross_over_random_swap_point(self, mum_array, dad_array):
         max_swap = self._get_max_swap_point(mum_array, dad_array)
@@ -181,17 +224,23 @@ class Tweann:
 
     def _crossover_node_pick(self, mum, dad):
         dominant = choice([mum, dad])
-        pick_layer = self._pick(dominant + '/HiddenLayers')
-        layer = pick_layer - 1
-        layer_key = '/Layer' + str(layer)
-        node = self._pick(dominant + layer_key + '/Nodes')
-        node_key = dominant + layer_key + '/Node' + str(node)
+        layer, node, node_key = self._pick_layer_node(dominant)
+
         return layer, node, node_key
 
     def _pick(self, key):
         num_key = int(self._read_data(key))
         pick = randint(0, num_key)
         return pick
+
+    def _pick_layer_node(self, child):
+        pick_layer = self._pick(child + '/HiddenLayers')
+        layer = pick_layer - 1
+        layer_key = 'Layer' + str(layer)
+        node = self._pick(child + '/' + layer_key + '/Nodes')
+        node_key = layer_key + '/Node' + str(node)
+
+        return layer, node, node_key
 
     def _check_node_exist(self, parent, layer, node):
         num_hidden_layers = int(self._read_data(parent + '/HiddenLayers'))
@@ -204,6 +253,98 @@ class Tweann:
                 return False
             else:
                 return True
+
+    def _mutate(self, child_num):
+        if random() < self.mutation_rate:
+            self._mutate_node(child_num)
+        if random() < self.add_node_mutation_rate:
+            self._mutate_by_adding_node(child_num)
+
+    def _mutate_node(self, child_num):
+        node_key = self._mutate_node_pick(child_num)
+        child_dict = self._get_node_data(node_key)
+        mutate_child_dict = self._mutate_node_element(child_dict)
+        self._set_node_data(node_key, mutate_child_dict)
+
+    def _mutate_node_pick(self, child_num):
+        child = 'Child' + str(child_num)
+        _, _, node_key = self._pick_layer_node(child)
+        child_node_key = child + '/' + node_key
+        return child_node_key
+
+    def _mutate_node_element(self, child_dict):
+        baby_dict = dict()
+
+        for element in child_dict:
+            if isinstance(child_dict[element], str):
+                baby_dict[element] = choice(self.activationFunc)
+            if isinstance(child_dict[element], np.ndarray):
+                baby_dict[element] = self._mutate_array(child_dict[element], self.perturbation_rate)
+            if isinstance(child_dict[element], int):
+                baby_dict[element] = choice([0, 1])
+
+        return baby_dict
+
+    @staticmethod
+    def _mutate_array(array, perturbation_rate):
+        mutate_array = array.copy()
+        shape_array = array.shape
+        pick_array_element = random(shape_array[0])
+        mutate_element = array[pick_array_element] + (-perturbation_rate + 2 * perturbation_rate * random())
+        mutate_array[pick_array_element] = mutate_element
+        return mutate_array
+
+    def _mutate_by_adding_node(self, child_num):
+        child = 'Child' + str(child_num)
+        num_hidden_layers = int(self._read_data(child + '/HiddenLayers'))
+        layer = randint(0, num_hidden_layers + 1)
+        if layer > num_hidden_layers:
+            self._increase_child_layer(child, layer)
+        else:
+            self._increase_child_layer_node(child, layer)
+
+    def _increase_child_layer(self, child, layer):
+        self._write_data(child + '/HiddenLayers', layer, hdf5_file='Babies.hdf5')
+        self._increase_child_layer_node(child, layer)
+
+    def _increase_child_layer_node(self, child, layer):
+        self._write_data(child + '/Layer' + str(layer) + '/Nodes', 1, hdf5_file='Babies.hdf5')
+        num_inputs = int(self._read_data(child + '/Layer' + str(layer) + 'Inputs'))
+        key = child + '/Layer' + str(layer) + '/Node0'
+        self._add_new_node(key, num_inputs)
+
+    def _add_new_node(self, key, num_inputs, hdf5_file='Babies.hdf5'):
+        node_dict = self._new_node_dict(key, num_inputs)
+        self.create_child_dataset(node_dict, hdf5_file=hdf5_file)
+        #self._set_node_data(key, node_dict, hdf5_file=hdf5_file)
+
+    def _new_node_dict(self, key, num_inputs):
+        chromo = dict()
+        chromo[key + '/Weights'] = np.random.rand(num_inputs, 1)
+        chromo[key + '/Bias'] = np.random.rand(1, 1)
+        chromo[key + '/Enabled'] = 1
+        chromo[key + '/Recurrent'] = choice([0, 1])
+        chromo[key + '/RecurrentWeight'] = np.random.rand(1, 1)
+        chromo[key + '/Activation'] = choice(self.activationFunc)
+        chromo[key + '/Inputs'] = np.zeros((num_inputs, 1))
+        chromo[key + '/Output'] = np.zeros((1, 1))
+
+        return chromo
+
+    def _create_new_population(self):
+        self._add_best_children()
+        self.delete_file('Children.hdf5')
+        rename('Babies.hdf5', 'Children.hdf5')
+
+    def _add_best_children(self):
+        best_child_num = self.population_size + 1
+        self._add_child_to_babies(best_child_num)
+        best_child_ever_num = self.population_size + 2
+        self._add_child_to_babies(best_child_ever_num)
+
+    def _add_child_to_babies(self, child_num):
+        child = 'Child' + str(child_num)
+        self._clone(child, child_num)
 
     def get_neural_network_output(self, child, nn_input):
         self._update_neural_network(child, nn_input)
@@ -354,6 +495,12 @@ class Tweann:
 
         return node_dict
 
+    def _set_node_data(self, node_key, node_dict, hdf5_file='Babies.hdf5'):
+        for chromo in self.neuron_chromo:
+            key = node_key + '/' + chromo
+            data = node_dict[chromo]
+            self._write_data(key, data, hdf5_file=hdf5_file)
+
     def _calculate_node_output(self, node):
         node['Weights'], node['Inputs'] = self._ensure_compatibility(node['Weights'], node['Inputs'])
         if node['Enabled'] == 1:
@@ -413,7 +560,6 @@ class Tweann:
         baby2_array[swap_point:max_swap] = mum_array[swap_point:max_swap]
 
         return baby1_array, baby2_array
-
 
     # This function will be overwritten by the user class
     def fitness_function(self, child):

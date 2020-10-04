@@ -186,12 +186,12 @@ class TweannTestCase(unittest.TestCase):
             remove('Babies.hdf5')
 
     def test_create_init_child_chromo_keys(self):
-        actual = self.test_tweann.create_init_child_chromo('Child0').keys()
+        actual = self.test_tweann._create_init_child_chromo('Child0').keys()
         expected = self.test_child0.keys()
         self.assertEqual(expected, actual)
 
     def test_create_init_child_chromo_dataTypes(self):
-        child = self.test_tweann_2.create_init_child_chromo('Child0')
+        child = self.test_tweann_2._create_init_child_chromo('Child0')
         actual = []
         for item in child:
             if isinstance(child[item], str):
@@ -206,8 +206,6 @@ class TweannTestCase(unittest.TestCase):
                 actual.append(None)
 
         expected = [(self.num_inputs, 1), (1, 1), True, True, (self.num_outputs, 1), True, (2, 1),
-                    (self.num_outputs, 1),
-                    (self.num_inputs, 1), (1, 1), True, True, (self.num_outputs, 1), True, (2, 1),
                     (self.num_outputs, 1), True, True, True]
         self.assertEqual(expected, actual)
 
@@ -574,7 +572,8 @@ class TweannTestCase(unittest.TestCase):
 
         self.assertAlmostEqual(actual, expected)
 
-    # Todo not used just an idea to try
+        # Todo not used just an idea to try
+
     def test_inherit(self):
         self.test_tweann.create_child_dataset(self.test_child0)
         self.test_tweann.create_child_dataset(self.test_child3)
@@ -586,6 +585,16 @@ class TweannTestCase(unittest.TestCase):
         expected = self.test_tweann._get_choice_list(['Child5', '', ''], hdf5_file='Babies.hdf5')
 
         self.assertEqual(True, True)
+
+    def test_add_new_node(self):
+        self.test_tweann.create_child_dataset(self.test_child0)
+        key = 'Child0/Layer0/Node0'
+        num_inputs = 5
+        self.test_tweann._add_new_node(key, num_inputs, hdf5_file='Children.hdf5')
+        actual = list(self.test_tweann._get_node_data(key).keys())
+        expected = self.test_tweann.neuron_chromo
+
+        self.assertEqual(expected, actual)
 
     def test_check_node_exist_node_exist(self):
         test_child = self.test_child2
@@ -662,9 +671,80 @@ class TweannTestCase(unittest.TestCase):
         mum_array = np.array([[0], [1], [2], [3], [4]])
         dad_array = np.array([[10], [11], [21], [31], [41]])
 
+        mum_array_list = mum_array.tolist()
+        dad_array_list = dad_array.tolist()
+
         actual_baby1, actual_baby2 = self.test_tweann._cross_over_random_swap_point(mum_array, dad_array)
-        if (mum_array.tolist() != actual_baby1.tolist()) and (dad_array.tolist() != actual_baby2) and (actual_baby1.tolist() != actual_baby2):
+
+        actual_baby1_list = actual_baby1.tolist()
+        actual_baby2_list = actual_baby2.tolist()
+        if (mum_array_list != actual_baby1_list) and (dad_array_list != actual_baby2_list) and (
+                actual_baby1_list != actual_baby2_list):
             self.assertEqual(True, True)
+
+    def test_get_crossover_node_dict(self):
+        self.test_tweann.create_child_dataset(self.test_child0)
+        self.test_tweann.create_child_dataset(self.test_child3)
+        mum = 'Child0'
+        dad = 'Child1'
+        node_key = 'Layer-1/Node0'
+        mum_dict, dad_dict = self.test_tweann._get_crossover_node_dict(mum, dad, node_key)
+        actual = [self.test_tweann._calculate_node_output(mum_dict),
+                  self.test_tweann._calculate_node_output(dad_dict)]
+
+        expected_mum_dict = self.test_tweann._get_node_data('Child0/Layer-1/Node0')
+        expected_dad_dict = self.test_tweann._get_node_data('Child1/Layer-1/Node0')
+        expected = [self.test_tweann._calculate_node_output(expected_mum_dict),
+                    self.test_tweann._calculate_node_output(expected_dad_dict)]
+
+        self.assertEqual(expected, actual)
+
+    def test_crossover(self):
+        self.assertEqual(False, True)
+
+    def test_crossover_node_element(self):
+        self.assertEqual(False, True)
+
+    def test_cross_over_swap(self):
+        self.assertEqual(False, True)
+
+    def test_mutate(self, child_num):
+        self.assertEqual(False, True)
+        #_mutate(self, child_num)
+
+    def test_mutate_node(self):
+        self.assertEqual(False, True)
+
+    def test_mutate_node_pick(self):
+        self.assertEqual(False, True)
+
+    def test_mutate_node_element(self):
+        self.assertEqual(False, True)
+
+    def test_mutate_array(self):
+        self.assertEqual(False, True)
+
+    def test_mutate_by_adding_node(self):
+        self.assertEqual(False, True)
+
+    def test_increase_child_layer(self):
+        self.assertEqual(False, True)
+
+    def test_increase_child_layer_node(self):
+        self.assertEqual(False, True)
+
+    def test_new_node_dict(self):
+        self.assertEqual(False, True)
+
+    def test_create_new_population(self):
+        self.assertEqual(False, True)
+
+    def test_add_best_children(self):
+        self.assertEqual(False, True)
+
+    def test_add_child_to_babies(self):
+        self.assertEqual(False, True)
+
 
 
 if __name__ == '__main__':
