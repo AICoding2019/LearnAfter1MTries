@@ -316,7 +316,7 @@ class Tweann:
     def _add_new_node(self, key, num_inputs, hdf5_file='Babies.hdf5'):
         node_dict = self._new_node_dict(key, num_inputs)
         self.create_child_dataset(node_dict, hdf5_file=hdf5_file)
-        #self._set_node_data(key, node_dict, hdf5_file=hdf5_file)
+        # self._set_node_data(key, node_dict, hdf5_file=hdf5_file)
 
     def _new_node_dict(self, key, num_inputs):
         chromo = dict()
@@ -337,14 +337,10 @@ class Tweann:
         rename('Babies.hdf5', 'Children.hdf5')
 
     def _add_best_children(self):
-        best_child_num = self.population_size + 1
-        self._add_child_to_babies(best_child_num)
-        best_child_ever_num = self.population_size + 2
-        self._add_child_to_babies(best_child_ever_num)
-
-    def _add_child_to_babies(self, child_num):
-        child = 'Child' + str(child_num)
-        self._clone(child, child_num)
+        best_baby_num = self.population_size + 1
+        self._clone(self.fittest_child, best_baby_num)
+        best_baby_ever_num = self.population_size + 2
+        self._clone(self.fittest_child_ever, best_baby_ever_num)
 
     def get_neural_network_output(self, child, nn_input):
         self._update_neural_network(child, nn_input)

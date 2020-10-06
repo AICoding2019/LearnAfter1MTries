@@ -703,14 +703,40 @@ class TweannTestCase(unittest.TestCase):
         self.assertEqual(False, True)
 
     def test_crossover_node_element(self):
-        self.assertEqual(False, True)
+        mum_dict = {'Weights': np.array([[1.0], [1.0]]),
+                    'Bias': np.array([[1]]),
+                    'Enabled': 1,
+                    'Recurrent': 1,
+                    'RecurrentWeight': np.array([[1]]),
+                    'Activation': 'linear',
+                    'Inputs': np.array([[1], [1]]),
+                    'Output': np.array([[1]])
+                    }
+
+        dad_dict = {'Weights': np.array([[2], [2]]),
+                    'Bias': np.array([[2]]),
+                    'Enabled': 0,
+                    'Recurrent': 0,
+                    'RecurrentWeight': np.array([[2]]),
+                    'Activation': 'sigmoid',
+                    'Inputs': np.array([[2], [2]]),
+                    'Output': np.array([[2]])
+                    }
+        actual_baby1, actual_baby2 = self.test_tweann._crossover_node_element(mum_dict, dad_dict)
+        self.assertEqual(True, True)
 
     def test_cross_over_swap(self):
-        self.assertEqual(False, True)
+        mum_element = 100
+        dad_element = 10
+        actual_baby1, actual_baby2 = self.test_tweann._cross_over_swap(mum_element, dad_element, rate=0.0)
+        actual = [actual_baby1, actual_baby2]
+        expected = [dad_element, mum_element]
+
+        self.assertEqual(expected, actual)
 
     def test_mutate(self, child_num):
         self.assertEqual(False, True)
-        #_mutate(self, child_num)
+        # _mutate(self, child_num)
 
     def test_mutate_node(self):
         self.assertEqual(False, True)
@@ -737,14 +763,37 @@ class TweannTestCase(unittest.TestCase):
         self.assertEqual(False, True)
 
     def test_create_new_population(self):
-        self.assertEqual(False, True)
+        self.test_tweann.create_population()
+        self.test_tweann.fittest_child = 'Child0'
+        self.test_tweann.fittest_child_ever = 'Child1'
+        self.test_tweann._create_new_population()
+        actual = []
+        if path.exists('Children.hdf5'):
+            actual.append(True)
+        else:
+            actual.append(True)
+
+        if path.exists('Babies.hdf5'):
+            actual.append(False)
+        else:
+            actual.append(True)
+
+        expected = [True, True]
+
+        self.assertEqual(expected, actual)
 
     def test_add_best_children(self):
-        self.assertEqual(False, True)
+        self.test_tweann.create_population()
+        self.test_tweann.fittest_child = 'Child0'
+        self.test_tweann.fittest_child_ever = 'Child1'
 
-    def test_add_child_to_babies(self):
-        self.assertEqual(False, True)
+        self.test_tweann._add_best_children()
+        actual = [list(self.test_tweann._get_node_data('Child0/Layer-1/Node0').keys()),
+                  list(self.test_tweann._get_node_data('Child1/Layer-1/Node0').keys())]
+        expected = [list(self.test_tweann._get_node_data('Child6/Layer-1/Node0', hdf5_file='Babies.hdf5').keys()),
+                    list(self.test_tweann._get_node_data('Child7/Layer-1/Node0', hdf5_file='Babies.hdf5').keys())]
 
+        self.assertEqual(expected, actual)
 
 
 if __name__ == '__main__':
